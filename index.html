@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ARISE — Daily Quest System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#050810;
+  --panel:rgba(10,20,40,.55);
+  --cyan:#39C5F3;
+  --cyan-dim:rgba(57,197,243,.30);
+  --cyan-faint:rgba(57,197,243,.10);
+  --gold:#E7C15C;
+  --gold-dim:rgba(231,193,92,.35);
+  --red:#FF4655;
+  --red-dim:rgba(255,70,85,.35);
+  --ink:#D9E6F4;
+  --dim:#7C93AC;
+  --faint:#44586E;
+  --f-head:'Rajdhani',ui-sans-serif,sans-serif;
+  --f-body:'Inter',ui-sans-serif,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--f-body);font-size:14px;line-height:1.5;
+  min-height:100dvh;overflow-x:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--ink)}
+:focus-visible{outline:1px solid var(--cyan);outline-offset:2px}
+[hidden]{display:none!important}
+::selection{background:rgba(57,197,243,.25)}
+
+.h{font-family:var(--f-head);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.gold{color:var(--gold)}
+.red{color:var(--red)}
+.dim{color:var(--dim)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ============ BACKGROUND FX ============ */
+#fx-particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+#fx-scan{
+  position:fixed;inset:0;z-index:100;pointer-events:none;opacity:.03;
+  background:repeating-linear-gradient(0deg,#9FD8FF 0 1px,transparent 1px 3px);
+}
+
+/* ============ PANEL + CORNER BRACKETS ============ */
+.panel{
+  position:relative;
+  background:var(--panel);
+  border:1px solid rgba(57,197,243,.28);
+  box-shadow:0 0 18px rgba(57,197,243,.07),inset 0 0 24px rgba(57,197,243,.03);
+  padding:16px;
+}
+.panel::after{
+  content:"";position:absolute;inset:-1px;pointer-events:none;
+  background-image:
+    linear-gradient(var(--cyan),var(--cyan)),linear-gradient(var(--cyan),var(--cyan)),
+    linear-gradient(var(--cyan),var(--cyan)),linear-gradient(var(--cyan),var(--cyan)),
+    linear-gradient(var(--cyan),var(--cyan)),linear-gradient(var(--cyan),var(--cyan)),
+    linear-gradient(var(--cyan),var(--cyan)),linear-gradient(var(--cyan),var(--cyan));
+  background-position:top left,top left,top right,top right,bottom left,bottom left,bottom right,bottom right;
+  background-size:12px 1px,1px 12px,12px 1px,1px 12px,12px 1px,1px 12px,12px 1px,1px 12px;
+  background-repeat:no-repeat;
+}
+.panel.p-gold{border-color:var(--gold-dim);box-shadow:0 0 18px rgba(231,193,92,.07)}
+.panel.p-gold::after{
+  background-image:
+    linear-gradient(var(--gold),var(--gold)),linear-gradient(var(--gold),var(--gold)),
+    linear-gradient(var(--gold),var(--gold)),linear-gradient(var(--gold),var(--gold)),
+    linear-gradient(var(--gold),var(--gold)),linear-gradient(var(--gold),var(--gold)),
+    linear-gradient(var(--gold),var(--gold)),linear-gradient(var(--gold),var(--gold));
+}
+.panel.p-red{border-color:var(--red-dim)}
+.panel-title{font-family:var(--f-head);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--cyan);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel-title.gold{color:var(--gold)}
+
+/* ============ LAYOUT SHELL ============ */
+#app{position:relative;z-index:1;min-height:100dvh}
+#hud-top{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;
+  background:linear-gradient(180deg,rgba(5,8,16,.92),rgba(5,8,16,.72));
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(57,197,243,.14);
+}
+.brand{font-family:var(--f-head);font-weight:700;letter-spacing:.14em;font-size:18px;color:var(--ink);text-shadow:0 0 12px rgba(57,197,243,.5)}
+.brand-sub{color:var(--cyan);font-size:11px;margin-left:8px;letter-spacing:.14em}
+#hud-date{font-family:var(--f-mono);font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+
+#sysline{
+  margin:16px 16px 0;padding:10px 12px;
+  font-family:var(--f-mono);font-size:12px;line-height:1.6;
+  min-height:44px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+  cursor:pointer;
+}
+.sys-prefix{color:var(--cyan);font-weight:500;flex:none}
+#sys-text{color:var(--ink)}
+#sysline[data-tone="gold"] #sys-text{color:var(--gold)}
+#sysline[data-tone="red"] #sys-text{color:var(--red)}
+#sys-caret{display:inline-block;width:7px;height:13px;background:var(--cyan);animation:blink 1.1s steps(1) infinite;flex:none}
+@keyframes blink{50%{opacity:0}}
+
+main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+.screen{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.screen > *{min-width:0}
+.screen[hidden]{display:none}
+
+/* ============ TAB BAR ============ */
+#tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;justify-content:center;
+  background:rgba(5,8,16,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-top:1px solid rgba(57,197,243,.18);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#tabbar .tabs-inner{display:flex;width:100%;max-width:640px}
+#tabbar button{
+  flex:1;min-height:60px;padding:8px 0 6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--dim);position:relative;transition:color .2s ease;
+}
+#tabbar button .ic{width:22px;height:22px}
+#tabbar button span{font-family:var(--f-head);font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+#tabbar button::before{content:"";position:absolute;top:-1px;left:20%;right:20%;height:2px;background:var(--cyan);opacity:0;transform:scaleX(.4);transition:transform .25s ease,opacity .25s ease}
+#tabbar button.active{color:var(--cyan);text-shadow:0 0 10px rgba(57,197,243,.6)}
+#tabbar button.active::before{opacity:1;transform:scaleX(1)}
+@media(hover:hover){#tabbar button:hover{color:var(--ink)}#tabbar button.active:hover{color:var(--cyan)}}
+#tabbar button:active{transform:translateY(1px)}
+
+/* ============ ICONS ============ */
+.ic{width:18px;height:18px;flex:none}
+
+/* ============ ENTRANCE ANIMATION ============ */
+.enter{animation:rise .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ============ STATUS SCREEN ============ */
+.lvl-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.lbl{font-family:var(--f-head);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.lvl-num{font-family:var(--f-head);font-weight:700;font-size:64px;line-height:1;color:var(--ink);text-shadow:0 0 24px rgba(57,197,243,.45)}
+.rank-badge{
+  width:64px;height:64px;flex:none;position:relative;
+  border:1px solid var(--cyan-dim);background:var(--cyan-faint);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.rank-badge b{font-family:var(--f-head);font-weight:700;font-size:30px;line-height:1;color:var(--cyan);text-shadow:0 0 14px rgba(57,197,243,.7)}
+.rank-badge i{font-style:normal;font-family:var(--f-head);font-size:9px;letter-spacing:.2em;color:var(--dim)}
+.rank-badge[data-rank="S"]{border-color:var(--gold-dim);background:rgba(231,193,92,.08)}
+.rank-badge[data-rank="S"] b{color:var(--gold);text-shadow:0 0 14px rgba(231,193,92,.7)}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:6px 0;border-bottom:1px solid rgba(57,197,243,.1);font-size:13px}
+.kv span{font-family:var(--f-head);font-weight:600;font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.kv b{font-weight:600}
+.kv-wrap{margin-top:12px}
+
+.bar-block{margin-top:12px}
+.bar-block:first-child{margin-top:0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.bar-head .bh-l{display:flex;align-items:center;gap:8px;color:var(--dim)}
+.bar-head .bh-l .ic{width:15px;height:15px}
+.bar-head .lbl{color:var(--dim)}
+.bar-head .val{font-family:var(--f-mono);font-size:12px;color:var(--ink)}
+.bar-track{height:10px;border:1px solid rgba(57,197,243,.22);background:rgba(5,8,16,.5);overflow:hidden}
+.bar-fill{
+  height:100%;width:100%;
+  transform-origin:left center;transform:scaleX(var(--p,0));
+  transition:transform .5s cubic-bezier(.22,1,.36,1);
+  background:linear-gradient(90deg,rgba(57,197,243,.55),var(--cyan));
+  box-shadow:0 0 10px rgba(57,197,243,.45);
+}
+.bar-fill.mp{background:linear-gradient(90deg,rgba(57,197,243,.25),rgba(57,197,243,.6))}
+.bar-fill.fat{background:linear-gradient(90deg,rgba(124,147,172,.4),rgba(124,147,172,.7));box-shadow:none}
+.bar-fill.warn{background:linear-gradient(90deg,rgba(255,70,85,.5),var(--red));box-shadow:0 0 10px rgba(255,70,85,.45)}
+.bar-note{font-size:11px;color:var(--dim);margin-top:4px;font-family:var(--f-mono)}
+.bar-note.warn{color:var(--red)}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-cell{
+  border:1px solid rgba(57,197,243,.14);background:rgba(5,8,16,.3);
+  padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;
+  column-gap:10px;row-gap:6px;align-items:center;
+}
+.stat-cell .ic{width:20px;height:20px;color:var(--cyan);grid-row:1/3}
+.stat-name{font-family:var(--f-head);font-weight:600;font-size:12px;letter-spacing:.12em;color:var(--dim)}
+.stat-val{font-family:var(--f-mono);font-size:20px;font-weight:500;color:var(--ink);justify-self:end;grid-row:1/3;transition:color .3s ease}
+.stat-val.pulse{animation:statglow .9s ease-out}
+@keyframes statglow{
+  0%{color:var(--ink);text-shadow:none}
+  30%{color:#fff;text-shadow:0 0 16px rgba(57,197,243,.95)}
+  100%{color:var(--ink);text-shadow:none}
+}
+.pips{display:flex;gap:4px}
+.pip{width:6px;height:6px;border:1px solid var(--cyan-dim);transform:rotate(45deg)}
+.pip.on{background:var(--cyan);box-shadow:0 0 6px rgba(57,197,243,.8)}
+.alloc{display:flex;gap:8px;grid-column:1/4;justify-content:flex-end}
+.alloc button{
+  width:44px;height:34px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--cyan-dim);background:var(--cyan-faint);color:var(--cyan);
+  transition:background .15s ease;position:relative;
+}
+.alloc button::before{content:"";position:absolute;inset:-6px -2px}
+.alloc button .ic{width:14px;height:14px}
+.alloc button:disabled{opacity:.25;cursor:default}
+@media(hover:hover){.alloc button:not(:disabled):hover{background:rgba(57,197,243,.2)}}
+.alloc button:not(:disabled):active{transform:scale(.94)}
+.ap-row{
+  margin-top:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;
+  border:1px solid var(--gold-dim);background:rgba(231,193,92,.05);
+}
+.ap-row .lbl{color:var(--gold)}
+.ap-row b{font-family:var(--f-mono);font-size:18px;color:var(--gold)}
+
+/* ============ QUESTS SCREEN ============ */
+.q-top{display:flex;gap:16px;align-items:center}
+.ring-wrap{position:relative;width:112px;height:112px;flex:none}
+.ring-wrap svg{width:112px;height:112px;transform:rotate(-90deg);filter:drop-shadow(0 0 6px rgba(57,197,243,.4))}
+.ring-track{fill:none;stroke:rgba(57,197,243,.12);stroke-width:6}
+.ring-fill{fill:none;stroke:var(--cyan);stroke-width:6;transition:stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-center b{font-family:var(--f-mono);font-size:22px;font-weight:500}
+.ring-center i{font-style:normal;font-family:var(--f-mono);font-size:10px;color:var(--dim)}
+.q-summary{flex:1;display:grid;gap:10px}
+.streak-row{display:flex;align-items:center;gap:10px}
+.streak-row .ic{width:20px;height:20px;color:var(--cyan)}
+.streak-row.hot .ic{color:var(--gold)}
+.streak-row b{font-family:var(--f-mono);font-size:22px;line-height:1}
+.streak-row .lbl{align-self:flex-end;padding-bottom:2px}
+.freeze-row{display:flex;align-items:center;gap:8px}
+.freeze-tok{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(57,197,243,.2);color:var(--faint)}
+.freeze-tok.on{border-color:var(--cyan-dim);color:var(--cyan);background:var(--cyan-faint);box-shadow:0 0 8px rgba(57,197,243,.3)}
+.freeze-tok .ic{width:13px;height:13px}
+.q-best{font-family:var(--f-mono);font-size:11px;color:var(--dim)}
+
+.q-list{display:grid;gap:8px}
+.quest{display:flex;align-items:center;gap:12px;padding:10px 12px;transition:border-color .2s ease}
+@media(hover:hover){.quest:not(.done):hover{border-color:rgba(57,197,243,.5)}}
+.qcheck{
+  width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--cyan-dim);background:rgba(5,8,16,.4);color:transparent;
+  transition:background .15s ease,border-color .15s ease;
+}
+.qcheck .ic{width:20px;height:20px}
+@media(hover:hover){.quest:not(.done) .qcheck:hover{background:var(--cyan-faint);border-color:var(--cyan)}}
+.qcheck:active{transform:scale(.92)}
+.quest.done .qcheck{color:var(--cyan);background:var(--cyan-faint);border-color:var(--cyan);box-shadow:0 0 10px rgba(57,197,243,.35)}
+.qcheck.just{animation:pop .15s ease-out}
+@keyframes pop{0%{transform:scale(.82)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+.quest.done{border-color:rgba(57,197,243,.14)}
+.quest.done .qlabel{color:var(--dim)}
+.qbody{flex:1;min-width:0}
+.qlabel{font-size:13px;font-weight:500;line-height:1.4}
+.qmeta{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.chip{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;
+  padding:1px 6px;border:1px solid rgba(57,197,243,.2);color:var(--dim);
+}
+.chip.core{border-color:var(--gold-dim);color:var(--gold)}
+.chip.xp{color:var(--cyan);border-color:var(--cyan-dim)}
+.chip.skipped{border-color:rgba(124,147,172,.4);color:var(--dim)}
+.chip.ar{border-color:var(--gold-dim);color:var(--gold)}
+.qskip{
+  flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;
+  min-height:44px;padding:4px 10px;justify-content:center;
+  border:1px solid rgba(57,197,243,.2);color:var(--dim);
+  font-family:var(--f-head);font-weight:600;font-size:10px;letter-spacing:.1em;
+  transition:border-color .15s ease,color .15s ease;
+}
+.qskip small{font-family:var(--f-mono);font-size:9px;color:var(--dim)}
+@media(hover:hover){.qskip:not(:disabled):hover{border-color:var(--cyan-dim);color:var(--cyan)}}
+.qskip:disabled{opacity:.35;cursor:default}
+.rest-card{display:flex;gap:12px;align-items:center}
+.rest-card .ic{width:24px;height:24px;color:var(--gold);flex:none}
+.rest-card p{font-size:12px;color:var(--dim);margin-top:2px}
+.redeem-input{
+  width:100%;margin-top:8px;padding:10px 12px;
+  background:rgba(5,8,16,.5);border:1px solid rgba(57,197,243,.2);color:var(--ink);font-size:13px;
+}
+.redeem-input::placeholder{color:var(--faint)}
+.redeem-btn{
+  margin-top:8px;min-height:44px;padding:0 16px;width:100%;
+  border:1px solid var(--gold-dim);background:rgba(231,193,92,.06);color:var(--gold);
+  font-family:var(--f-head);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+}
+@media(hover:hover){.redeem-btn:hover{background:rgba(231,193,92,.12)}}
+
+/* ============ GENERIC BUTTONS / FORMS ============ */
+.btn{
+  min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--cyan-dim);background:var(--cyan-faint);color:var(--cyan);
+  font-family:var(--f-head);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  transition:background .15s ease,border-color .15s ease;
+}
+@media(hover:hover){.btn:hover{background:rgba(57,197,243,.18);border-color:var(--cyan)}}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{background:none;border-color:rgba(57,197,243,.2);color:var(--dim)}
+@media(hover:hover){.btn.ghost:hover{color:var(--cyan);border-color:var(--cyan-dim);background:var(--cyan-faint)}}
+.btn.danger{border-color:var(--red-dim);background:rgba(255,70,85,.06);color:var(--red)}
+@media(hover:hover){.btn.danger:hover{background:rgba(255,70,85,.14)}}
+.btn.wide{width:100%}
+.field{display:grid;gap:6px}
+.field label{font-family:var(--f-head);font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.field input,.field select,.field textarea{
+  min-height:44px;padding:8px 12px;width:100%;min-width:0;
+  background:rgba(5,8,16,.5);border:1px solid rgba(57,197,243,.22);color:var(--ink);
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan);outline:none}
+.field input.mono{font-family:var(--f-mono)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-err{font-size:12px;color:var(--red);min-height:18px;font-family:var(--f-mono)}
+
+/* ============ GATE SCREEN ============ */
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.seg button{
+  min-height:44px;padding:0 12px;border:1px solid rgba(57,197,243,.2);color:var(--dim);
+  font-family:var(--f-head);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  transition:color .15s ease,border-color .15s ease;
+}
+.seg button.active{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-faint);text-shadow:0 0 8px rgba(57,197,243,.5)}
+@media(hover:hover){.seg button:not(.active):hover{color:var(--ink)}}
+.chart-wrap{position:relative;height:220px;min-width:0;overflow:hidden}
+.empty-note{font-family:var(--f-mono);font-size:12px;color:var(--dim);text-align:center;padding:32px 0}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:11px;white-space:nowrap}
+th{font-family:var(--f-head);font-weight:600;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;padding:8px;border-bottom:1px solid rgba(57,197,243,.2)}
+td{padding:8px;border-bottom:1px solid rgba(57,197,243,.08);color:var(--ink)}
+td.delta-up{color:var(--cyan)}
+.gate-hint{font-size:12px;color:var(--dim);margin-bottom:12px}
+
+/* ============ TITLES SCREEN ============ */
+.title-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.title-card{
+  position:relative;padding:14px 12px;min-height:120px;
+  border:1px solid rgba(57,197,243,.16);background:rgba(5,8,16,.3);
+  display:flex;flex-direction:column;gap:8px;align-items:flex-start;text-align:left;
+  transition:border-color .2s ease;width:100%;
+}
+.title-card .ic{width:22px;height:22px;color:var(--gold)}
+.title-card b{font-family:var(--f-head);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+.title-card p{font-size:11px;color:var(--dim)}
+.title-card.locked .ic,.title-card.locked b{color:var(--faint)}
+.title-card.locked{cursor:default}
+.title-card.active-title{border-color:var(--gold);box-shadow:0 0 14px rgba(231,193,92,.18)}
+@media(hover:hover){.title-card:not(.locked):hover{border-color:var(--gold-dim)}}
+.title-tag{position:absolute;top:8px;right:8px;font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--gold);border:1px solid var(--gold-dim);padding:1px 6px}
+.title-lock{position:absolute;top:8px;right:8px;color:var(--faint)}
+.title-lock .ic{width:14px;height:14px;color:var(--faint)}
+
+/* ============ SETTINGS SCREEN ============ */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(57,197,243,.08)}
+.set-row:last-child{border-bottom:0}
+.set-row .set-info b{font-size:13px;font-weight:600;display:block}
+.set-row .set-info p{font-size:11px;color:var(--dim)}
+.switch{
+  position:relative;width:52px;height:30px;flex:none;
+  border:1px solid var(--cyan-dim);background:rgba(5,8,16,.5);
+  transition:background .2s ease;padding:0;
+}
+.switch::before{content:"";position:absolute;inset:-8px -6px}
+.switch::after{
+  content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;
+  background:var(--faint);transition:transform .2s ease,background .2s ease;
+}
+.switch[aria-checked="true"]{background:var(--cyan-faint)}
+.switch[aria-checked="true"]::after{transform:translateX(22px);background:var(--cyan);box-shadow:0 0 8px rgba(57,197,243,.6)}
+.ql-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(57,197,243,.08)}
+.ql-row .ql-info{flex:1;min-width:0}
+.ql-row .ql-info b{font-size:12px;font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ql-row .qmeta{margin-top:3px}
+.icon-btn{
+  width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(57,197,243,.2);color:var(--dim);transition:color .15s ease,border-color .15s ease;
+}
+@media(hover:hover){.icon-btn:hover{color:var(--cyan);border-color:var(--cyan-dim)}}
+.icon-btn.danger{color:var(--faint)}
+@media(hover:hover){.icon-btn.danger:hover{color:var(--red);border-color:var(--red-dim)}}
+.name-row{display:flex;gap:8px}
+.name-row input{flex:1;min-width:0}
+
+/* ============ OVERLAYS ============ */
+.overlay{
+  position:fixed;inset:0;z-index:70;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  background:rgba(5,8,16,.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+.overlay .panel{width:100%;max-width:400px;max-height:86dvh;overflow-y:auto}
+.ov-enter{animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+
+/* boot */
+#boot{z-index:90;flex-direction:column;gap:24px}
+.boot-logo{font-family:var(--f-head);font-weight:700;font-size:40px;letter-spacing:.3em;color:var(--ink);text-shadow:0 0 24px rgba(57,197,243,.6);padding-left:.3em}
+.boot-sync{font-family:var(--f-mono);font-size:11px;letter-spacing:.3em;color:var(--cyan);animation:blink 1s steps(1) infinite}
+.skel{width:min(280px,70vw);display:grid;gap:10px}
+.skel div{height:12px;background:rgba(57,197,243,.08);position:relative;overflow:hidden}
+.skel div::after{
+  content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(57,197,243,.22),transparent);
+  animation:shimmer 1s ease-in-out infinite;
+}
+.skel div:nth-child(2){width:75%}.skel div:nth-child(3){width:55%}
+@keyframes shimmer{to{transform:translateX(100%)}}
+
+/* level up */
+#levelup{z-index:80;flex-direction:column;cursor:pointer}
+#lu-flash{position:fixed;inset:0;background:var(--cyan);opacity:0;pointer-events:none}
+#levelup.play #lu-flash{animation:flash .55s ease-out both}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+.lu-box{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+#levelup.play .lu-box{animation:luIn .5s cubic-bezier(.22,1,.36,1) .15s both}
+@keyframes luIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.lu-title{font-family:var(--f-head);font-weight:700;font-size:36px;letter-spacing:.2em;color:var(--cyan);text-shadow:0 0 30px rgba(57,197,243,.9);padding-left:.2em}
+.lu-lv{font-family:var(--f-mono);font-size:18px;color:var(--ink)}
+.lu-ap{font-family:var(--f-mono);font-size:13px;color:var(--gold)}
+.lu-hint{font-family:var(--f-mono);font-size:10px;color:var(--dim);margin-top:16px}
+
+/* toast */
+#toast{
+  position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:65;
+  max-width:608px;margin:0 auto;
+  display:flex;align-items:center;gap:12px;padding:12px 8px 12px 14px;
+  background:rgba(10,20,40,.94);border:1px solid var(--cyan-dim);
+  box-shadow:0 0 20px rgba(57,197,243,.15);
+  animation:rise .3s cubic-bezier(.22,1,.36,1) both;overflow:hidden;
+}
+#toast .toast-msg{flex:1;font-size:12px;min-width:0}
+#toast .toast-msg b{font-family:var(--f-mono);color:var(--cyan);font-weight:500}
+#toast-undo{
+  flex:none;min-height:44px;padding:0 14px;color:var(--gold);
+  font-family:var(--f-head);font-weight:700;font-size:12px;letter-spacing:.14em;
+}
+.toast-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--cyan);transform-origin:left center}
+#toast.run .toast-bar{animation:drain 5s linear both}
+@keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* onboarding / tutorial */
+.ob-line{font-family:var(--f-mono);font-size:13px;line-height:1.7;min-height:48px}
+.ob-line .sys-prefix{margin-right:6px}
+.tut-step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(57,197,243,.1)}
+.tut-step:last-of-type{border-bottom:0}
+.tut-step .ic{width:20px;height:20px;color:var(--cyan);margin-top:2px}
+.tut-step b{font-family:var(--f-head);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);display:block}
+.tut-step p{font-size:12px;color:var(--dim)}
+
+/* modal generic */
+#modal{z-index:75}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.modal-head .panel-title{margin-bottom:0}
+textarea.io{
+  width:100%;min-height:140px;padding:10px;resize:vertical;
+  background:rgba(5,8,16,.6);border:1px solid rgba(57,197,243,.22);
+  font-family:var(--f-mono);font-size:11px;color:var(--ink);
+}
+
+/* ============ RESPONSIVE ============ */
+@media(min-width:768px){
+  main{max-width:720px;padding-top:24px}
+  .lvl-num{font-size:80px}
+  .stat-grid{gap:12px}
+  .title-grid{grid-template-columns:1fr 1fr 1fr}
+  .chart-wrap{height:280px}
+  .form-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+/* ============ REDUCED MOTION ============ */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important;animation-iteration-count:1!important}
+  #fx-particles{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="fx-particles" aria-hidden="true"></canvas>
+<div id="fx-scan" aria-hidden="true"></div>
+
+<div id="app" hidden>
+  <header id="hud-top">
+    <div class="brand">ARISE<span class="brand-sub">// SYSTEM</span></div>
+    <div id="hud-date"></div>
+  </header>
+
+  <div id="sysline" class="panel" data-tone="cyan" tabindex="0" role="button" aria-label="Pesan sistem — aktifkan untuk melewati animasi teks" title="Ketuk untuk melewati animasi teks">
+    <span class="sys-prefix" aria-hidden="true">[SYSTEM]</span><span id="sys-text" aria-hidden="true"></span><span id="sys-caret" aria-hidden="true"></span>
+    <span id="sys-live" class="sr-only" role="status" aria-live="polite"></span>
+  </div>
+
+  <main>
+    <section id="screen-status" class="screen" hidden></section>
+    <section id="screen-quests" class="screen" hidden></section>
+    <section id="screen-gate" class="screen" hidden></section>
+    <section id="screen-titles" class="screen" hidden></section>
+    <section id="screen-settings" class="screen" hidden></section>
+  </main>
+
+  <nav id="tabbar" aria-label="Navigasi utama">
+    <div class="tabs-inner">
+      <button data-action="tab" data-tab="status" aria-label="Status"><span data-ic="user"></span><span>Status</span></button>
+      <button data-action="tab" data-tab="quests" aria-label="Quests"><span data-ic="list"></span><span>Quests</span></button>
+      <button data-action="tab" data-tab="gate" aria-label="Gate"><span data-ic="gate"></span><span>Gate</span></button>
+      <button data-action="tab" data-tab="titles" aria-label="Titles"><span data-ic="trophy"></span><span>Titles</span></button>
+      <button data-action="tab" data-tab="settings" aria-label="Pengaturan"><span data-ic="gear"></span><span>Setel</span></button>
+    </div>
+  </nav>
+</div>
+
+<!-- boot -->
+<div id="boot" class="overlay">
+  <div class="boot-logo">ARISE</div>
+  <div class="skel" aria-hidden="true"><div></div><div></div><div></div></div>
+  <div class="boot-sync">SYNCING…</div>
+</div>
+
+<!-- onboarding -->
+<div id="onboard" class="overlay" hidden>
+  <div class="panel ov-enter">
+    <div class="ob-line"><span class="sys-prefix">[SYSTEM]</span><span id="ob-text"></span></div>
+    <form id="ob-form" hidden>
+      <div class="field" style="margin-top:8px">
+        <label for="ob-name">Nama Player</label>
+        <input id="ob-name" maxlength="20" autocomplete="off" placeholder="Tulis namamu">
+      </div>
+      <div class="form-err" id="ob-err"></div>
+      <button type="submit" class="btn wide">Daftar sebagai Player</button>
+    </form>
+  </div>
+</div>
+
+<!-- tutorial -->
+<div id="tutorial" class="overlay" hidden>
+  <div class="panel ov-enter">
+    <div class="panel-title">Panduan Singkat</div>
+    <div class="tut-step"><span data-ic="list"></span><div><b>Quests</b><p>Selesaikan quest harian. Hari terhitung jika ≥80% selesai <em>termasuk semua quest CORE</em>. Batas hari: 00.00 WIB.</p></div></div>
+    <div class="tut-step"><span data-ic="user"></span><div><b>Status</b><p>Quest memberi XP dan menaikkan stat. Naik level = +3 Ability Point untuk dialokasikan bebas.</p></div></div>
+    <div class="tut-step"><span data-ic="gate"></span><div><b>Gate</b><p>Sebulan sekali, ukur tinggi, berat, lengan, push-up, dan pull-up. Grafiknya jadi bukti progresmu.</p></div></div>
+    <div class="tut-step"><span data-ic="rec"></span><div><b>Pemulihan</b><p>Sistem menjaga pemulihanmu. Fatigue tinggi = latihan diganti pemulihan aktif. Tidur adalah quest utama.</p></div></div>
+    <button class="btn wide" data-action="tutorial-done" style="margin-top:16px">Mulai</button>
+  </div>
+</div>
+
+<!-- corrupt save recovery -->
+<div id="recovery" class="overlay" hidden>
+  <div class="panel p-red ov-enter">
+    <div class="panel-title" style="color:var(--red)">Save Corrupt</div>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:16px">
+      Data tersimpan tidak bisa dibaca. Kamu bisa mengunduh data mentahnya dulu sebagai cadangan, lalu reset sistem untuk mulai ulang.
+    </p>
+    <div style="display:grid;gap:8px">
+      <button class="btn ghost wide" data-action="recovery-download">Unduh data mentah</button>
+      <button class="btn danger wide" data-action="recovery-reset">Reset System</button>
+    </div>
+  </div>
+</div>
+
+<!-- level up -->
+<div id="levelup" class="overlay" hidden>
+  <div id="lu-flash"></div>
+  <div class="lu-box">
+    <div class="lu-title">LEVEL UP.</div>
+    <div class="lu-lv mono" id="lu-lv"></div>
+    <div class="lu-ap" id="lu-ap"></div>
+    <div class="lu-hint">KETUK UNTUK LANJUT</div>
+  </div>
+</div>
+
+<!-- modal -->
+<div id="modal" class="overlay" hidden>
+  <div class="panel ov-enter" id="modal-panel"></div>
+</div>
+
+<!-- undo toast -->
+<div id="toast" hidden>
+  <div class="toast-msg" id="toast-msg"></div>
+  <button id="toast-undo" data-action="undo">UNDO</button>
+  <div class="toast-bar"></div>
+</div>
+
+<noscript><p style="padding:24px;font-family:monospace">ARISE membutuhkan JavaScript.</p></noscript>
+
+<script>
+'use strict';
+/* =====================================================
+   ARISE — Daily Quest System (single-file, localStorage)
+   ===================================================== */
+
+/* ---------- konstanta & util ---------- */
+const KEY = 'arise_save_v1';
+const TZ = 'Asia/Jakarta';
+const XP_CORE = 20, XP_NORMAL = 10;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const deep = o => JSON.parse(JSON.stringify(o));
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const dateFmt = new Intl.DateTimeFormat('en-CA', {timeZone:TZ, year:'numeric', month:'2-digit', day:'2-digit'});
+const jToday = () => dateFmt.format(new Date());
+function weekdayOf(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m-1, d)).getUTCDay(); }
+function nextDay(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m-1, d) + 86400000).toISOString().slice(0,10); }
+function fmtShort(iso){ const [y,m,d] = iso.split('-').map(Number);
+  return new Intl.DateTimeFormat('id-ID', {timeZone:'UTC', day:'numeric', month:'short'}).format(new Date(Date.UTC(y, m-1, d, 12))); }
+function fmtLong(iso){ const [y,m,d] = iso.split('-').map(Number);
+  return new Intl.DateTimeFormat('id-ID', {timeZone:'UTC', day:'numeric', month:'short', year:'2-digit'}).format(new Date(Date.UTC(y, m-1, d, 12))); }
+function daysBetween(a,b){ const p = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+  return Math.round((p(b) - p(a)) / 86400000); }
+const uid = () => 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* ---------- ikon SVG ---------- */
+const IC = {
+  str:  '<path d="M14.5 17.5 4 7V3h4l10.5 10.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/>',
+  agi:  '<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>',
+  vit:  '<path d="M12 21C7.2 16.7 3 13.4 3 9.3A4.6 4.6 0 0 1 12 7.6a4.6 4.6 0 0 1 9 1.7c0 4.1-4.2 7.4-9 11.7z"/>',
+  rec:  '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  per:  '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  hp:   '<path d="M12 21C7.2 16.7 3 13.4 3 9.3A4.6 4.6 0 0 1 12 7.6a4.6 4.6 0 0 1 9 1.7c0 4.1-4.2 7.4-9 11.7z"/>',
+  mp:   '<path d="M12 3s6 6.6 6 11a6 6 0 1 1-12 0c0-4.4 6-11 6-11z"/>',
+  fat:  '<rect x="2.5" y="8" width="16" height="8" rx="1"/><path d="M21.5 11v2"/><path d="M6 11v2"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4.1 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  snow: '<path d="M12 3v18"/><path d="m5 6.5 14 11"/><path d="m19 6.5-14 11"/>',
+  gear: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  list: '<path d="M9.5 6H21M9.5 12H21M9.5 18H21"/><path d="m3 6 1.2 1.2L6.5 4.9M3 12l1.2 1.2 2.3-2.3M3 18l1.2 1.2 2.3-2.3"/>',
+  gate: '<path d="M12 2l8.5 10L12 22 3.5 12z"/><path d="M12 7l4.2 5L12 17l-4.2-5z"/>',
+  trophy:'<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  check:'<path d="m4 12.5 5 5L20 6.5"/>',
+  x:    '<path d="M6 6l12 12M18 6 6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  edit: '<path d="M17 3.5 20.5 7 8 19.5 4 20l.5-4z"/>',
+  down: '<path d="M12 3v12"/><path d="m6 11 6 6 6-6"/><path d="M4 21h16"/>',
+  up:   '<path d="M12 21V9"/><path d="m6 13 6-6 6 6"/><path d="M4 3h16"/>',
+  rest: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+};
+const icon = (n, cls='') =>
+  `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+$$('[data-ic]').forEach(el => { el.outerHTML = icon(el.dataset.ic); });
+
+/* ---------- seed data ---------- */
+function seedQuests(){
+  return [
+    {id:'sleep',     label:'Tidur 8–10 jam, mulai ≤22.15',                cat:'REC', core:true,  xp:XP_CORE,   doneToday:false},
+    {id:'breakfast', label:'Sarapan protein: 2–3 telur + susu',           cat:'VIT', core:true,  xp:XP_CORE,   doneToday:false},
+    {id:'sun',       label:'Berjemur 10–15 mnt (jam 8–10)',               cat:'VIT', core:false, xp:XP_NORMAL, doneToday:false},
+    {id:'workout',   label:'Latihan sesuai jadwal hari ini',              cat:'STR', core:true,  xp:XP_CORE,   doneToday:false, workout:true},
+    {id:'protein',   label:'Total protein ±95 g',                         cat:'VIT', core:true,  xp:XP_CORE,   doneToday:false},
+    {id:'milk',      label:'Susu fortifikasi 2×',                         cat:'VIT', core:false, xp:XP_NORMAL, doneToday:false},
+    {id:'stretch',   label:'Stretching + hanging 10 mnt',                 cat:'REC', core:false, xp:XP_NORMAL, doneToday:false},
+    {id:'clean',     label:'Tanpa rokok/vape & maks 1 minuman manis',     cat:'PER', core:false, xp:XP_NORMAL, doneToday:false},
+    {id:'screenoff', label:'Layar off 30–60 mnt sebelum tidur',           cat:'PER', core:false, xp:XP_NORMAL, doneToday:false},
+  ];
+}
+const STAT_KEYS = ['STR','AGI','VIT','REC','PER'];
+const STAT_NAMES = {STR:'Strength', AGI:'Agility', VIT:'Vitality', REC:'Recovery', PER:'Perception'};
+
+const TITLES = [
+  {id:'novice',    name:'Novice Hunter',         req:'Memulai perjalanan',            cond:s => true},
+  {id:'erank',     name:'E-Rank Cleared',        req:'Capai Level 5',                 cond:s => s.player.level >= 5},
+  {id:'firstgate', name:'First Gate',            req:'Catat pengukuran pertama',      cond:s => s.gate.length >= 1},
+  {id:'ironwill',  name:'Iron Will',             req:'Streak 30 hari',                cond:s => s.streak.best >= 30},
+  {id:'shadow',    name:'Shadow of Discipline',  req:'Streak 100 hari',               cond:s => s.streak.best >= 100},
+];
+
+const GATE_METRICS = [
+  {k:'heightCm',  label:'Tinggi',  unit:'cm', min:100, max:230},
+  {k:'weightKg',  label:'Berat',   unit:'kg', min:25,  max:200},
+  {k:'armCm',     label:'Lengan',  unit:'cm', min:10,  max:70},
+  {k:'pushupMax', label:'Push-up', unit:'×',  min:0,   max:500},
+  {k:'pullupMax', label:'Pull-up', unit:'×',  min:0,   max:200},
+];
+
+function defaultSave(name){
+  const t = jToday();
+  return {
+    v: 1,
+    player: {
+      name, level:1, xp:0, rank:'E',
+      activeTitle:'Novice Hunter', titlesUnlocked:['novice'],
+      hp:100, mp:0, fatigue:0, abilityPoints:0,
+      stats:{STR:10, AGI:10, VIT:10, REC:10, PER:10},
+      statProgress:{STR:0, AGI:0, VIT:0, REC:0, PER:0},
+    },
+    streak: {current:0, best:0, freezeTokens:0},
+    gate: [],
+    dayLogs: [],
+    settings: {soundOn:false, questList:seedQuests()},
+    meta: {
+      createdAt:t, lastOpenDate:t, greetedDate:null,
+      skipDate:null, skippedId:null,
+      redemptionDate:null, redemptionDone:false,
+      arDate:null, reflections:[],
+    },
+  };
+}
+
+/* ---------- persistence ---------- */
+let S = null;
+
+function validateSave(s){
+  try {
+    return !!(s && s.v === 1
+      && s.player && typeof s.player.level === 'number' && typeof s.player.xp === 'number'
+      && s.player.stats && STAT_KEYS.every(k => typeof s.player.stats[k] === 'number')
+      && s.streak && typeof s.streak.current === 'number'
+      && Array.isArray(s.gate) && Array.isArray(s.dayLogs)
+      && s.settings && Array.isArray(s.settings.questList)
+      && s.meta && typeof s.meta.lastOpenDate === 'string');
+  } catch(e){ return false; }
+}
+/* Merapikan + mensanitasi save (dipakai saat load, impor, dan undo):
+   semua angka dipaksa finite & di-clamp, isi array divalidasi per item,
+   id/kategori quest dipaksa ke charset/whitelist aman sebelum dirender. */
+function normalizeSave(s){
+  const d = defaultSave((s.player && s.player.name) || 'Hunter');
+  const num = (v, def=0) => (typeof v === 'number' && Number.isFinite(v)) ? v : def;
+  const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+  s.player = Object.assign(d.player, s.player);
+  s.player.name = String(s.player.name || 'Hunter').slice(0, 20);
+  s.player.level = clamp(Math.round(num(s.player.level, 1)), 1, 999);
+  s.player.xp = clamp(num(s.player.xp), 0, 1e7);
+  s.player.abilityPoints = clamp(Math.round(num(s.player.abilityPoints)), 0, 9999);
+  s.player.rank = rankFor(s.player.level);
+  s.player.activeTitle = String(s.player.activeTitle || 'Novice Hunter').slice(0, 40);
+  const st = Object.assign(d.player.stats, s.player.stats || {});
+  const sp = Object.assign(d.player.statProgress, s.player.statProgress || {});
+  s.player.stats = {}; s.player.statProgress = {};
+  STAT_KEYS.forEach(k => {
+    s.player.stats[k] = clamp(Math.round(num(st[k], 10)), 0, 999);
+    s.player.statProgress[k] = clamp(Math.round(num(sp[k])), 0, 2);
+  });
+  s.player.titlesUnlocked = (Array.isArray(s.player.titlesUnlocked) ? s.player.titlesUnlocked : [])
+    .filter(id => TITLES.some(t => t.id === id));
+  if (!s.player.titlesUnlocked.includes('novice')) s.player.titlesUnlocked.push('novice');
+  s.player.hp = clamp(num(s.player.hp, 100), 0, 100);
+  s.player.mp = clamp(num(s.player.mp), 0, 100);
+  s.player.fatigue = clamp(num(s.player.fatigue), 0, 100);
+
+  s.streak = Object.assign(d.streak, s.streak);
+  s.streak.current = clamp(Math.round(num(s.streak.current)), 0, 100000);
+  s.streak.best = Math.max(s.streak.current, clamp(Math.round(num(s.streak.best)), 0, 100000));
+  s.streak.freezeTokens = clamp(Math.round(num(s.streak.freezeTokens)), 0, 2);
+
+  s.gate = (Array.isArray(s.gate) ? s.gate : [])
+    .filter(g => g && typeof g === 'object' && isDate(g.date))
+    .map(g => {
+      const e = {date: g.date};
+      GATE_METRICS.forEach(m => { e[m.k] = Number.isFinite(g[m.k]) ? g[m.k] : null; });
+      return e;
+    });
+  s.dayLogs = (Array.isArray(s.dayLogs) ? s.dayLogs : [])
+    .filter(l => l && typeof l === 'object' && isDate(l.date))
+    .map(l => ({
+      date: l.date,
+      completedIds: (Array.isArray(l.completedIds) ? l.completedIds : []).map(String),
+      pct: clamp(Math.round(num(l.pct)), 0, 100),
+    }));
+
+  s.settings = Object.assign(d.settings, s.settings);
+  s.settings.soundOn = !!s.settings.soundOn;
+  const cleanId = v => String(v == null ? '' : v).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
+  s.settings.questList = (Array.isArray(s.settings.questList) ? s.settings.questList : [])
+    .filter(q => q && typeof q === 'object' && q.label != null)
+    .map(q => Object.assign({
+      id: cleanId(q.id) || uid(),
+      label: String(q.label).slice(0, 80),
+      cat: STAT_KEYS.includes(q.cat) ? q.cat : 'VIT',
+      core: !!q.core,
+      xp: Number.isFinite(q.xp) ? clamp(Math.round(q.xp), 0, 100) : (q.core ? XP_CORE : XP_NORMAL),
+      doneToday: !!q.doneToday,
+    }, q.workout ? {workout:true} : {}));
+  if (s.settings.questList.length === 0) s.settings.questList = seedQuests();
+
+  s.meta = Object.assign(d.meta, s.meta);
+  ['createdAt','lastOpenDate','greetedDate','skipDate','redemptionDate','arDate'].forEach(k => {
+    if (s.meta[k] != null && !isDate(s.meta[k])) s.meta[k] = null;
+  });
+  if (!isDate(s.meta.lastOpenDate)) s.meta.lastOpenDate = jToday();
+  s.meta.skippedId = s.meta.skippedId != null ? cleanId(s.meta.skippedId) : null;
+  s.meta.redemptionDone = !!s.meta.redemptionDone;
+  if (!Array.isArray(s.meta.reflections)) s.meta.reflections = [];
+  return s;
+}
+let noStorage = false;
+function loadSave(){
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); }
+  catch(e){ noStorage = true; return {save:null}; }
+  if (raw == null) return {save:null};
+  try {
+    const s = JSON.parse(raw);
+    if (!validateSave(s)) return {corrupt:true, raw};
+    return {save:normalizeSave(s)};
+  } catch(e){
+    return {corrupt:true, raw};
+  }
+}
+function save(){
+  if (noStorage) return;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ noStorage = true; sysMsg('Save failed. Storage is unavailable — progress will not persist.', 'red'); }
+}
+
+/* ---------- engine: quest instances ---------- */
+function workoutModeFor(iso){
+  const w = weekdayOf(iso);
+  if (w===1 || w===3 || w===5) return 'STR';
+  if (w===2 || w===6) return 'AGI';
+  return 'REST';
+}
+function workoutQuestId(){
+  const q = S.settings.questList.find(q => q.workout);
+  return q ? q.id : null;
+}
+/* Instansi quest efektif untuk satu tanggal: quest workout dipetakan ke
+   STR/AGI/REST sesuai hari, atau Active Recovery bila fatigue-gate aktif. */
+function questInstances(dateIso, ar){
+  const list = [];
+  for (const q of S.settings.questList){
+    if (q.workout){
+      const mode = ar ? 'AR' : workoutModeFor(dateIso);
+      if (mode === 'REST') continue;
+      if (mode === 'AR')
+        list.push({id:q.id, label:'Active Recovery (stretching + jalan santai)', cat:'REC', core:true, xp:XP_CORE, workout:true, ar:true});
+      else
+        list.push({id:q.id, label:q.label, cat:mode, core:true, xp:XP_CORE, workout:true});
+    } else {
+      list.push({id:q.id, label:q.label, cat:q.cat, core:!!q.core, xp:(typeof q.xp === 'number' ? q.xp : (q.core ? XP_CORE : XP_NORMAL))});
+    }
+  }
+  return list;
+}
+const todayInstances = () => questInstances(jToday(), S.meta.arDate === jToday());
+const completedIdsToday = () => S.settings.questList.filter(q => q.doneToday).map(q => q.id);
+
+/* ---------- engine: settlement ---------- */
+function settleOne(dateIso, completedIds){
+  if (S.dayLogs.some(l => l.date === dateIso))
+    return {date:dateIso, success:true, neutral:true, usedFreeze:false, hpLost:0};
+  const ar = S.meta.arDate === dateIso;
+  const req = questInstances(dateIso, ar);
+  const total = req.length;
+  const doneCount = req.filter(q => completedIds.includes(q.id)).length;
+  const pct = total ? Math.round(100 * doneCount / total) : 100;
+  const out = {date:dateIso, success:false, neutral:false, usedFreeze:false, hpLost:0, pct};
+
+  if (total === 0){
+    out.neutral = true; out.success = true;
+  } else {
+    const coreOk = req.filter(q => q.core).every(q => completedIds.includes(q.id));
+    out.success = pct >= 80 && coreOk;
+    if (out.success){
+      S.streak.current++;
+      if (S.streak.current > S.streak.best) S.streak.best = S.streak.current;
+      S.player.hp = clamp(S.player.hp + 15, 0, 100);
+      if (S.streak.current % 7 === 0) S.streak.freezeTokens = clamp(S.streak.freezeTokens + 1, 0, 2);
+    } else if (S.streak.freezeTokens > 0){
+      S.streak.freezeTokens--;
+      out.usedFreeze = true;
+    } else {
+      S.streak.current = 0;
+      S.player.hp = clamp(S.player.hp - 20, 0, 100);
+      out.hpLost = 20;
+    }
+  }
+  const mode = ar ? 'AR' : workoutModeFor(dateIso);
+  const wid = workoutQuestId();
+  const workoutDone = wid != null && completedIds.includes(wid);
+  if (mode === 'REST') S.player.fatigue = clamp(S.player.fatigue - 30, 0, 100);
+  else if (mode === 'AR'){ if (workoutDone) S.player.fatigue = clamp(S.player.fatigue - 30, 0, 100); }
+  else if (workoutDone) S.player.fatigue = clamp(S.player.fatigue + 25, 0, 100);
+
+  S.dayLogs.push({date:dateIso, completedIds:[...completedIds], pct});
+  return out;
+}
+
+/* Dipanggil saat buka app & saat hari berganti: settle semua hari yang lewat. */
+function settleDays(){
+  const today = jToday();
+  const last = S.meta.lastOpenDate;
+  const msgs = [];
+
+  if (last && today > last){
+    const results = [settleOne(last, completedIdsToday())];
+    let d = nextDay(last);
+    let guard = 0;
+    while (d < today && guard++ < 400){ results.push(settleOne(d, [])); d = nextDay(d); }
+
+    for (const q of S.settings.questList) q.doneToday = false;
+    S.meta.skipDate = null; S.meta.skippedId = null; S.meta.arDate = null;
+    S.meta.redemptionDate = null; S.meta.redemptionDone = false;
+
+    const fails = results.filter(r => !r.success && !r.usedFreeze);
+    if (fails.length){
+      const hpLost = fails.reduce((a,r) => a + r.hpLost, 0);
+      const lastRes = results[results.length - 1];
+      const offerRedemption = !lastRes.success && !lastRes.usedFreeze;
+      if (offerRedemption){ S.meta.redemptionDate = today; S.meta.redemptionDone = false; }
+      msgs.push({
+        text: (fails.length === 1 ? 'Daily quest incomplete.' : fails.length + ' days incomplete.')
+          + ` Streak reset. HP -${hpLost}.` + (offerRedemption ? ' A Redemption quest is available today.' : ''),
+        tone: 'red',
+      });
+    }
+    S.meta.lastOpenDate = today;
+  } else if (!last){
+    S.meta.lastOpenDate = today;
+  }
+  /* today < last: jam perangkat mundur — jangan settle apa pun */
+
+  const mode = workoutModeFor(today);
+  if (mode !== 'REST' && S.player.fatigue >= 70 && S.meta.arDate !== today){
+    S.meta.arDate = today;
+    msgs.push({
+      text: `Fatigue ${S.player.fatigue}/100. Today's workout is replaced with Active Recovery. The System protects recovery — it never punishes with exercise.`,
+      tone: 'gold',
+    });
+  }
+  if (S.meta.greetedDate !== today){
+    S.meta.greetedDate = today;
+    msgs.push({text:'Daily quests have arrived.', tone:'cyan'});
+  }
+  collectTitleUnlocks(msgs);
+  save();
+  return msgs;
+}
+
+/* ---------- engine: XP / level / stat ---------- */
+const needXp = level => Math.round(100 * Math.pow(level, 1.5));
+const rankFor = l => l>=40 ? 'S' : l>=28 ? 'A' : l>=18 ? 'B' : l>=10 ? 'C' : l>=5 ? 'D' : 'E';
+const NEXT_RANK = {E:'D · LV 5', D:'C · LV 10', C:'B · LV 18', B:'A · LV 28', A:'S · LV 40', S:'—'};
+
+function resolveLevels(){
+  let n = 0;
+  while (S.player.xp >= needXp(S.player.level)){
+    S.player.xp -= needXp(S.player.level);
+    S.player.level++;
+    S.player.abilityPoints += 3;
+    n++;
+  }
+  if (n) S.player.rank = rankFor(S.player.level);
+  return n;
+}
+function bumpStat(cat){
+  if (!STAT_KEYS.includes(cat)) return;
+  S.player.statProgress[cat] = (S.player.statProgress[cat] || 0) + 1;
+  if (S.player.statProgress[cat] >= 3){
+    S.player.statProgress[cat] = 0;
+    S.player.stats[cat]++;
+    fx.pulseStat = cat;
+  }
+}
+function collectTitleUnlocks(msgs){
+  for (const t of TITLES){
+    if (!S.player.titlesUnlocked.includes(t.id) && t.cond(S)){
+      S.player.titlesUnlocked.push(t.id);
+      const m = {text:`Title unlocked: "${t.name}".`, tone:'gold'};
+      if (msgs) msgs.push(m); else sysMsg(m.text, m.tone);
+    }
+  }
+}
+
+/* ---------- engine: aksi player ---------- */
+const fx = {pulseStat:null, popId:null};
+let undoSnap = null, undoTimer = null;
+
+function beginUndoable(){
+  commitUndo();
+  undoSnap = deep(S);
+}
+function commitUndo(){
+  undoSnap = null;
+  if (undoTimer){ clearTimeout(undoTimer); undoTimer = null; }
+  $('#toast').hidden = true;
+}
+function showUndoToast(html){
+  const t = $('#toast');
+  $('#toast-msg').innerHTML = html;
+  t.hidden = false;
+  t.classList.remove('run'); void t.offsetWidth; t.classList.add('run');
+  if (undoTimer) clearTimeout(undoTimer);
+  undoTimer = setTimeout(commitUndo, 5000);
+}
+function doUndo(){
+  if (!undoSnap) return;
+  S = normalizeSave(undoSnap);
+  STAT_KEYS.forEach(k => { sessionAlloc[k] = 0; });
+  undoSnap = null;
+  if (undoTimer){ clearTimeout(undoTimer); undoTimer = null; }
+  $('#toast').hidden = true;
+  save();
+  renderAll();
+}
+
+/* Hari berganti di tengah sesi (mis. centang tepat setelah 00:00 WIB):
+   settle dulu dengan centang pra-tengah-malam, jangan kreditkan aksi ke hari lama. */
+function guardDayFlip(){
+  if (jToday() !== S.meta.lastOpenDate){ checkDayFlip(); return true; }
+  return false;
+}
+
+function completeQuest(id){
+  if (guardDayFlip()) return;
+  const def = S.settings.questList.find(q => q.id === id);
+  const inst = todayInstances().find(q => q.id === id);
+  if (!def || !inst || def.doneToday) return;
+  beginUndoable();
+  def.doneToday = true;
+  S.player.xp += inst.xp;
+  bumpStat(inst.cat);
+  if (inst.cat === 'REC') S.player.mp = clamp(S.player.mp + 10, 0, 100);
+  const leveled = resolveLevels();
+  collectTitleUnlocks(null);
+  fx.popId = id;
+  save();
+  renderAll();
+  showUndoToast(`<b>+${inst.xp} XP</b> · ${esc(inst.label)}`);
+  SFX.blip();
+  if (leveled) playLevelUp();
+}
+
+function skipQuest(id){
+  if (guardDayFlip()) return;
+  const today = jToday();
+  const def = S.settings.questList.find(q => q.id === id);
+  const inst = todayInstances().find(q => q.id === id);
+  if (!def || !inst || def.doneToday || inst.core) return;
+  if (S.meta.skipDate === today || S.player.mp < 30) return;
+  beginUndoable();
+  S.player.mp -= 30;
+  S.meta.skipDate = today;
+  S.meta.skippedId = id;
+  def.doneToday = true;
+  save();
+  renderAll();
+  showUndoToast(`<b>-30 MP</b> · Quest dilewati: ${esc(inst.label)}`);
+  SFX.blip();
+}
+
+function completeRedemption(note){
+  if (guardDayFlip()) return;
+  const today = jToday();
+  if (S.meta.redemptionDate !== today || S.meta.redemptionDone) return;
+  beginUndoable();
+  S.meta.redemptionDone = true;
+  S.meta.reflections = (S.meta.reflections || []).slice(-29);
+  S.meta.reflections.push({date:today, note:note || ''});
+  S.player.xp += 5;
+  bumpStat('REC');
+  S.player.mp = clamp(S.player.mp + 10, 0, 100);
+  const leveled = resolveLevels();
+  collectTitleUnlocks(null);
+  save();
+  renderAll();
+  showUndoToast('<b>+5 XP</b> · Redemption selesai');
+  SFX.blip();
+  sysMsg('Redemption complete. The record stands corrected.', 'cyan');
+  if (leveled) playLevelUp();
+}
+
+const sessionAlloc = {STR:0, AGI:0, VIT:0, REC:0, PER:0};
+function allocStat(cat, dir){
+  if (dir > 0 && S.player.abilityPoints > 0){
+    S.player.abilityPoints--; S.player.stats[cat]++; sessionAlloc[cat]++;
+    fx.pulseStat = cat;
+  } else if (dir < 0 && sessionAlloc[cat] > 0){
+    S.player.abilityPoints++; S.player.stats[cat]--; sessionAlloc[cat]--;
+  } else return;
+  save();
+  renderStatus();
+}
+
+function saveGateEntry(entry){
+  const i = S.gate.findIndex(g => g.date === entry.date);
+  if (i >= 0) S.gate[i] = entry; else S.gate.push(entry);
+  S.gate.sort((a,b) => a.date < b.date ? -1 : 1);
+  collectTitleUnlocks(null);
+  save();
+  renderGate();
+  renderTitles();
+  sysMsg('Gate cleared. Measurements recorded.', 'cyan');
+  SFX.blip();
+}
+
+/* ---------- system voice (typewriter) ---------- */
+const sysQ = [];
+let sysBusy = false, sysSkipFn = null;
+function sysMsg(text, tone='cyan'){ sysQ.push({text, tone}); pumpSys(); }
+async function pumpSys(){
+  if (sysBusy) return;
+  sysBusy = true;
+  while (sysQ.length){
+    const m = sysQ.shift();
+    $('#sysline').dataset.tone = m.tone;
+    $('#sys-live').textContent = '[SYSTEM] ' + m.text;
+    await typewrite($('#sys-text'), m.text);
+    if (sysQ.length) await sleep(1200);
+  }
+  sysBusy = false;
+}
+function typewrite(el, text){
+  return new Promise(res => {
+    if (RM){ el.textContent = text; res(); return; }
+    el.textContent = '';
+    const t0 = performance.now();
+    let raf = 0;
+    const step = now => {
+      const i = Math.min(text.length, Math.floor((now - t0) / 18));
+      el.textContent = text.slice(0, i);
+      if (i >= text.length){ sysSkipFn = null; res(); }
+      else raf = requestAnimationFrame(step);
+    };
+    sysSkipFn = () => { cancelAnimationFrame(raf); el.textContent = text; sysSkipFn = null; res(); };
+    raf = requestAnimationFrame(step);
+  });
+}
+
+/* ---------- audio ---------- */
+const SFX = {
+  ctx: null,
+  ensure(){
+    if (!S || !S.settings.soundOn) return null;
+    if (!this.ctx){
+      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ return null; }
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  tone(f, at, dur, type='square', gain=.045){
+    const c = this.ensure(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = f;
+    o.connect(g); g.connect(c.destination);
+    const t = c.currentTime + at;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + .01);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.start(t); o.stop(t + dur + .05);
+  },
+  blip(){ this.tone(880, 0, .09); this.tone(1318, .06, .08); },
+  levelup(){ [523, 659, 784, 1046].forEach((f,i) => this.tone(f, i*.09, .14, 'triangle', .05)); },
+};
+
+/* ---------- level up overlay ---------- */
+let luTimer = null;
+function playLevelUp(){
+  const o = $('#levelup');
+  $('#lu-lv').textContent = `${S.player.name} — LV. ${S.player.level} · RANK ${S.player.rank}`;
+  $('#lu-ap').textContent = `+3 ABILITY POINTS (${S.player.abilityPoints} tersedia)`;
+  o.hidden = false;
+  o.classList.remove('play'); void o.offsetWidth; o.classList.add('play');
+  sysMsg('LEVEL UP.', 'cyan');
+  SFX.levelup();
+  if (luTimer) clearTimeout(luTimer);
+  luTimer = setTimeout(closeLevelUp, RM ? 900 : 2400);
+}
+function closeLevelUp(){
+  if (luTimer){ clearTimeout(luTimer); luTimer = null; }
+  $('#levelup').hidden = true;
+}
+
+/* ---------- render: header ---------- */
+function renderHeader(){
+  const now = new Date();
+  const s = new Intl.DateTimeFormat('id-ID', {timeZone:TZ, weekday:'short', day:'numeric', month:'short'}).format(now);
+  $('#hud-date').textContent = s.toUpperCase() + ' · WIB';
+}
+
+/* ---------- render: STATUS ---------- */
+function bar(label, ic, val, max, cls, note){
+  const p = max ? val / max : 0;
+  return `
+  <div class="bar-block">
+    <div class="bar-head">
+      <span class="bh-l">${icon(ic)}<span class="lbl">${label}</span></span>
+      <span class="val">${val} / ${max}</span>
+    </div>
+    <div class="bar-track" role="progressbar" aria-label="${label}" aria-valuenow="${val}" aria-valuemin="0" aria-valuemax="${max}">
+      <div class="bar-fill ${cls}" style="--p:${p}"></div>
+    </div>
+    ${note ? `<div class="bar-note ${cls==='warn'?'warn':''}">${note}</div>` : ''}
+  </div>`;
+}
+function renderStatus(){
+  const P = S.player;
+  const need = needXp(P.level);
+  const fatWarn = P.fatigue >= 70;
+  const hpWarn = P.hp < 30;
+  const el = $('#screen-status');
+  el.innerHTML = `
+  <div class="panel enter">
+    <div class="lvl-row">
+      <div>
+        <div class="lbl">Level</div>
+        <div class="lvl-num">${P.level}</div>
+      </div>
+      <div class="rank-badge" data-rank="${P.rank}"><b>${P.rank}</b><i>RANK</i></div>
+    </div>
+    <div class="kv-wrap">
+      <div class="kv"><span>Player</span><b>${esc(P.name)}</b></div>
+      <div class="kv"><span>Job</span><b>HUNTER</b></div>
+      <div class="kv"><span>Title</span><b class="gold">${esc(P.activeTitle)}</b></div>
+      <div class="kv"><span>Next Rank</span><b class="mono dim" style="font-size:12px">${NEXT_RANK[P.rank]}</b></div>
+    </div>
+    ${bar('XP', 'agi', P.xp, need, '', `Level berikutnya: ${need - P.xp} XP lagi`)}
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('hp')} Kondisi</div>
+    ${bar('HP', 'hp', P.hp, 100, hpWarn ? 'warn' : '', hpWarn ? 'HP rendah — jaga konsistensi untuk pulih (+15/hari sukses)' : '')}
+    ${bar('MP', 'mp', P.mp, 100, 'mp', 'MP dari quest Recovery · 30 MP = lewati 1 quest non-core')}
+    ${bar('FATIGUE', 'fat', P.fatigue, 100, fatWarn ? 'warn' : 'fat', fatWarn ? '≥70: latihan diganti Active Recovery' : '')}
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('str')} Stats</div>
+    <div class="stat-grid">
+      ${STAT_KEYS.map(k => {
+        const prog = P.statProgress[k] || 0;
+        return `
+        <div class="stat-cell">
+          ${icon(k.toLowerCase())}
+          <span class="stat-name" title="${STAT_NAMES[k]}">${k}</span>
+          <span class="stat-val ${fx.pulseStat===k?'pulse':''}" data-stat="${k}">${P.stats[k]}</span>
+          <span class="pips" title="Progres menuju +1 (${prog}/3)">
+            ${[0,1,2].map(i => `<span class="pip ${i<prog?'on':''}"></span>`).join('')}
+          </span>
+          ${(P.abilityPoints>0 || sessionAlloc[k]>0) ? `
+          <span class="alloc">
+            <button data-action="alloc-minus" data-stat="${k}" aria-label="Kurangi ${k}" ${sessionAlloc[k]>0?'':'disabled'}>${icon('minus')}</button>
+            <button data-action="alloc-plus" data-stat="${k}" aria-label="Tambah ${k}" ${P.abilityPoints>0?'':'disabled'}>${icon('plus')}</button>
+          </span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="ap-row">
+      <span class="lbl">Available Ability Points</span>
+      <b>${P.abilityPoints}</b>
+    </div>
+  </div>`;
+  fx.pulseStat = null;
+  animateFills(el);
+}
+
+/* ---------- render: QUESTS ---------- */
+function renderQuests(){
+  const prevNote = ($('#redeem-note') || {}).value || '';
+  const today = jToday();
+  const mode = workoutModeFor(today);
+  const ar = S.meta.arDate === today;
+  const insts = todayInstances();
+  const total = insts.length;
+  const doneCount = insts.filter(q => {
+    const def = S.settings.questList.find(d => d.id === q.id);
+    return def && def.doneToday;
+  }).length;
+  const pct = total ? Math.round(100 * doneCount / total) : 0;
+  const R = 50, C = 2 * Math.PI * R;
+  const skipAvailable = S.meta.skipDate !== today;
+  const redemption = S.meta.redemptionDate === today && !S.meta.redemptionDone;
+
+  const el = $('#screen-quests');
+  el.innerHTML = `
+  <div class="panel enter">
+    <div class="q-top">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 112 112" aria-hidden="true">
+          <circle class="ring-track" cx="56" cy="56" r="${R}"/>
+          <circle class="ring-fill" cx="56" cy="56" r="${R}"
+            stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-target="${(C*(1-pct/100)).toFixed(1)}"/>
+        </svg>
+        <div class="ring-center"><b>${pct}%</b><i>${doneCount}/${total} QUEST</i></div>
+      </div>
+      <div class="q-summary">
+        <div>
+          <div class="lbl">Streak</div>
+          <div class="streak-row ${S.streak.current>=7?'hot':''}">
+            ${icon('flame')}<b class="mono">${S.streak.current}</b><span class="lbl">hari</span>
+          </div>
+        </div>
+        <div>
+          <div class="lbl">Streak Freeze</div>
+          <div class="freeze-row">
+            ${[0,1].map(i => `<span class="freeze-tok ${i < S.streak.freezeTokens ? 'on' : ''}" title="Streak freeze">${icon('snow')}</span>`).join('')}
+            <span class="q-best">BEST ${S.streak.best}</span>
+          </div>
+        </div>
+        <div class="q-best">≥80% + semua CORE = hari terhitung</div>
+      </div>
+    </div>
+  </div>
+
+  ${mode === 'REST' && !ar ? `
+  <div class="panel p-gold enter rest-card">
+    ${icon('rest')}
+    <div>
+      <b class="h" style="font-size:13px;color:var(--gold)">Rest Day</b>
+      <p>Hari pemulihan terjadwal (Kamis & Minggu). Tidak ada quest latihan. Fatigue -30 saat hari ditutup.</p>
+    </div>
+  </div>` : ''}
+
+  <div class="q-list">
+    ${insts.map(q => {
+      const def = S.settings.questList.find(d => d.id === q.id);
+      const done = def && def.doneToday;
+      const skipped = done && S.meta.skippedId === q.id && S.meta.skipDate === today;
+      const canSkip = !done && !q.core && skipAvailable;
+      return `
+      <div class="quest panel ${done ? 'done' : ''} enter">
+        <button class="qcheck ${fx.popId===q.id?'just':''}" data-action="qcheck" data-id="${q.id}"
+          role="checkbox" aria-checked="${done ? 'true' : 'false'}" aria-label="${esc(q.label)}" ${done?'disabled':''}>
+          ${icon('check')}
+        </button>
+        <div class="qbody">
+          <div class="qlabel">${esc(q.label)}</div>
+          <div class="qmeta">
+            ${q.ar ? '<span class="chip ar">RECOVERY</span>' : ''}
+            <span class="chip">${esc(q.cat)}</span>
+            ${q.core ? '<span class="chip core">CORE</span>' : ''}
+            ${skipped ? '<span class="chip skipped">SKIPPED · -30 MP</span>' : `<span class="chip xp">+${q.xp} XP</span>`}
+          </div>
+        </div>
+        ${canSkip ? `
+        <button class="qskip" data-action="qskip" data-id="${q.id}" ${S.player.mp < 30 ? 'disabled title="MP kurang (butuh 30)"' : ''}>
+          SKIP<small>30 MP</small>
+        </button>` : ''}
+      </div>`;
+    }).join('')}
+
+    ${redemption ? `
+    <div class="quest panel p-gold enter" style="display:block">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${icon('flame')}
+        <div class="qbody">
+          <div class="qlabel">Redemption: jalan santai 10 mnt + refleksi 1 kalimat</div>
+          <div class="qmeta"><span class="chip ar">OPSIONAL</span><span class="chip">REC</span><span class="chip xp">+5 XP</span></div>
+        </div>
+      </div>
+      <input class="redeem-input" id="redeem-note" maxlength="140" placeholder="Refleksi satu kalimat (opsional)…">
+      <button class="redeem-btn" data-action="redeem">Selesaikan Redemption</button>
+    </div>` : ''}
+  </div>`;
+  const noteEl = $('#redeem-note');
+  if (noteEl && prevNote) noteEl.value = prevNote;
+  fx.popId = null;
+  animateFills(el);
+}
+
+/* ---------- render: GATE ---------- */
+let gateChart = null, gateMetric = 'heightCm';
+function renderGate(){
+  const el = $('#screen-gate');
+  /* re-render tidak boleh menghapus isian form yang sedang diketik */
+  const prevInput = {};
+  GATE_METRICS.forEach(m => { const f = $('#g-' + m.k); if (f && f.value) prevInput[m.k] = f.value; });
+  const lastEntry = S.gate[S.gate.length - 1];
+  const hint = lastEntry
+    ? `Gate terakhir: ${fmtLong(lastEntry.date)} (${daysBetween(lastEntry.date, jToday())} hari lalu). Ideal: tiap ±30 hari.`
+    : 'Belum ada data. Lakukan pengukuran pertamamu untuk membuka gerbang.';
+  el.innerHTML = `
+  <div class="panel p-gold enter">
+    <div class="panel-title gold">${icon('gate')} Boss Gate — Pengukuran Bulanan</div>
+    <p class="gate-hint">${hint}</p>
+    <form id="gate-form">
+      <div class="form-grid">
+        ${GATE_METRICS.map(m => `
+        <div class="field">
+          <label for="g-${m.k}">${m.label} (${m.unit})</label>
+          <input class="mono" id="g-${m.k}" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>`).join('')}
+      </div>
+      <div class="form-err" id="gate-err"></div>
+      <button type="submit" class="btn wide">Challenge the Gate</button>
+    </form>
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('agi')} Progres</div>
+    <div class="seg" id="gate-seg" role="tablist" aria-label="Pilih metrik">
+      ${GATE_METRICS.map(m => `<button data-action="gate-metric" data-k="${m.k}" class="${gateMetric===m.k?'active':''}" role="tab" aria-selected="${gateMetric===m.k}">${m.label}</button>`).join('')}
+    </div>
+    ${S.gate.length === 0
+      ? '<div class="empty-note">BELUM ADA DATA GATE</div>'
+      : `<div class="chart-wrap"><canvas id="gate-chart" aria-label="Grafik ${esc(GATE_METRICS.find(m=>m.k===gateMetric).label)}"></canvas></div>
+         <div class="empty-note" id="chart-fallback" hidden>Grafik butuh koneksi internet (Chart.js CDN). Data tetap tercatat di tabel.</div>`}
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('list')} Riwayat</div>
+    ${S.gate.length === 0 ? '<div class="empty-note">—</div>' : `
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tanggal</th>${GATE_METRICS.map(m => `<th>${m.label}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${[...S.gate].reverse().map(g => `
+          <tr>
+            <td>${fmtLong(g.date)}</td>
+            ${GATE_METRICS.map(m => `<td>${g[m.k] != null ? esc(g[m.k]) : '—'}</td>`).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>`;
+  GATE_METRICS.forEach(m => { if (prevInput[m.k]){ const f = $('#g-' + m.k); if (f) f.value = prevInput[m.k]; } });
+  animateFills(el);
+  if (currentTab === 'gate') ensureChart();
+}
+function ensureChart(){
+  const cv = $('#gate-chart');
+  if (!cv || S.gate.length === 0) return;
+  if (!window.Chart){ const f = $('#chart-fallback'); if (f) f.hidden = false; cv.parentElement.hidden = true; return; }
+  const m = GATE_METRICS.find(x => x.k === gateMetric);
+  const labels = S.gate.map(g => fmtShort(g.date));
+  const data = S.gate.map(g => g[m.k]);
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.color = '#7C93AC';
+  const cfg = {
+    type: 'line',
+    data: {labels, datasets: [{
+      label: m.label,
+      data,
+      borderColor: '#39C5F3',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#050810',
+      pointBorderColor: '#39C5F3',
+      pointBorderWidth: 1.7,
+      tension: .3,
+      fill: false,
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: RM ? false : {duration: 400, easing: 'easeOutQuart'},
+      interaction: {mode: 'index', intersect: false},
+      plugins: {
+        legend: {display: false},
+        tooltip: {
+          backgroundColor: 'rgba(10,20,40,.95)',
+          borderColor: 'rgba(57,197,243,.4)',
+          borderWidth: 1,
+          titleColor: '#D9E6F4',
+          bodyColor: '#D9E6F4',
+          titleFont: {family: "'IBM Plex Mono', monospace", size: 11},
+          bodyFont: {family: "'IBM Plex Mono', monospace", size: 11},
+          displayColors: false,
+          callbacks: {label: c => ` ${c.parsed.y} ${m.unit}`},
+        },
+      },
+      scales: {
+        x: {grid: {color: 'rgba(124,147,172,.08)'}, ticks: {font: {size: 10}, maxTicksLimit: 8}},
+        y: {grid: {color: 'rgba(124,147,172,.08)'}, ticks: {font: {size: 10}, maxTicksLimit: 6}},
+      },
+    },
+  };
+  if (gateChart){ gateChart.destroy(); gateChart = null; }
+  gateChart = new Chart(cv.getContext('2d'), cfg);
+}
+function handleGateSubmit(){
+  const err = $('#gate-err');
+  err.textContent = '';
+  const entry = {date: jToday()};
+  for (const m of GATE_METRICS){
+    const raw = $('#g-' + m.k).value.trim().replace(',', '.');
+    const v = parseFloat(raw);
+    if (raw === '' || !isFinite(v)){ err.textContent = `Isi ${m.label} dulu.`; return; }
+    if (v < m.min || v > m.max){ err.textContent = `${m.label}: rentang wajar ${m.min}–${m.max} ${m.unit}.`; return; }
+    entry[m.k] = v;
+  }
+  saveGateEntry(entry);
+}
+
+/* ---------- render: TITLES ---------- */
+function renderTitles(){
+  const el = $('#screen-titles');
+  el.innerHTML = `
+  <div class="panel enter">
+    <div class="panel-title gold">${icon('trophy')} Titles</div>
+    <p class="gate-hint">Gelar dari pencapaian nyata. Ketuk gelar yang terbuka untuk memakainya.</p>
+    <div class="title-grid">
+      ${TITLES.map(t => {
+        const unlocked = S.player.titlesUnlocked.includes(t.id);
+        const active = S.player.activeTitle === t.name;
+        return `
+        <button class="title-card ${unlocked ? '' : 'locked'} ${active ? 'active-title' : ''}"
+          data-action="title-set" data-id="${t.id}" ${unlocked ? '' : 'disabled'}
+          aria-label="${esc(t.name)}${active ? ' (aktif)' : unlocked ? '' : ' (terkunci)'}">
+          ${icon('trophy')}
+          <b>${esc(t.name)}</b>
+          <p>${esc(t.req)}</p>
+          ${active ? '<span class="title-tag">AKTIF</span>' : ''}
+          ${unlocked ? '' : `<span class="title-lock">${icon('lock')}</span>`}
+        </button>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---------- render: SETTINGS ---------- */
+function renderSettings(){
+  const el = $('#screen-settings');
+  el.innerHTML = `
+  <div class="panel enter">
+    <div class="panel-title">${icon('user')} Profil</div>
+    <div class="field">
+      <label for="set-name">Nama Player</label>
+      <div class="name-row">
+        <input id="set-name" maxlength="20" value="${esc(S.player.name)}">
+        <button class="btn" data-action="save-name">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('gear')} Sistem</div>
+    <div class="set-row">
+      <div class="set-info"><b>Suara sistem</b><p>Blip saat quest selesai & level up</p></div>
+      <button class="switch" role="switch" aria-checked="${S.settings.soundOn}" aria-label="Suara sistem" data-action="toggle-sound"></button>
+    </div>
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('list')} Daftar Quest</div>
+    ${S.settings.questList.map(q => `
+    <div class="ql-row">
+      <div class="ql-info">
+        <b>${esc(q.label)}</b>
+        <div class="qmeta">
+          <span class="chip">${q.workout ? 'AUTO (jadwal)' : esc(q.cat)}</span>
+          ${q.core || q.workout ? '<span class="chip core">CORE</span>' : ''}
+        </div>
+      </div>
+      <button class="icon-btn" data-action="edit-quest" data-id="${q.id}" aria-label="Edit quest">${icon('edit')}</button>
+      ${q.workout ? '' : `<button class="icon-btn danger" data-action="del-quest" data-id="${q.id}" aria-label="Hapus quest">${icon('x')}</button>`}
+    </div>`).join('')}
+    <button class="btn ghost wide" data-action="add-quest" style="margin-top:12px">${icon('plus')} Tambah Quest</button>
+  </div>
+
+  <div class="panel enter">
+    <div class="panel-title">${icon('down')} Data</div>
+    <div style="display:grid;gap:8px">
+      <button class="btn ghost wide" data-action="export">${icon('down')} Ekspor JSON</button>
+      <button class="btn ghost wide" data-action="import">${icon('up')} Impor JSON</button>
+    </div>
+  </div>
+
+  <div class="panel p-red enter">
+    <div class="panel-title" style="color:var(--red)">Zona Bahaya</div>
+    <button class="btn danger wide" data-action="reset">Reset semua data</button>
+  </div>`;
+}
+
+/* ---------- render umum ---------- */
+let currentTab = 'quests';
+function renderAll(){
+  renderHeader();
+  renderStatus();
+  renderQuests();
+  renderGate();
+  renderTitles();
+  renderSettings();
+}
+function animateFills(scope){
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    scope.querySelectorAll('.ring-fill[data-target]').forEach(r => { r.style.strokeDashoffset = r.dataset.target; });
+  }));
+}
+function showTab(name){
+  currentTab = name;
+  $$('.screen').forEach(s => { s.hidden = s.id !== 'screen-' + name; });
+  $$('#tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  const panels = $('#screen-' + name).querySelectorAll(':scope > .panel, :scope .q-list > .panel');
+  panels.forEach((p, i) => {
+    p.classList.remove('enter'); void p.offsetWidth;
+    p.style.animationDelay = Math.min(i * 80, 480) + 'ms';
+    p.classList.add('enter');
+  });
+  const scr = $('#screen-' + name);
+  animateFills(scr);
+  if (name === 'gate') ensureChart();
+  window.scrollTo({top: 0, behavior: 'auto'});
+}
+
+/* ---------- modal ---------- */
+function openModal(html){
+  $('#modal-panel').innerHTML = html;
+  $('#modal').hidden = false;
+}
+function closeModal(){ $('#modal').hidden = true; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+function questEditorModal(id){
+  const q = id ? S.settings.questList.find(x => x.id === id) : null;
+  const isWorkout = q && q.workout;
+  openModal(`
+    <div class="modal-head">
+      <div class="panel-title">${q ? 'Edit Quest' : 'Quest Baru'}</div>
+      <button class="icon-btn" data-action="modal-close" aria-label="Tutup">${icon('x')}</button>
+    </div>
+    <form id="qe-form" data-id="${q ? q.id : ''}">
+      <div style="display:grid;gap:12px">
+        <div class="field">
+          <label for="qe-label">Label (Bahasa Indonesia)</label>
+          <input id="qe-label" maxlength="80" value="${q ? esc(q.label) : ''}" required>
+        </div>
+        <div class="field">
+          <label for="qe-cat">Kategori stat</label>
+          <select id="qe-cat" ${isWorkout ? 'disabled' : ''}>
+            ${STAT_KEYS.map(k => `<option value="${k}" ${q && q.cat === k ? 'selected' : ''}>${k} — ${STAT_NAMES[k]}</option>`).join('')}
+          </select>
+          ${isWorkout ? '<p style="font-size:11px;color:var(--dim)">Quest latihan: kategori & CORE diatur otomatis oleh jadwal (STR Sen/Rab/Jum, AGI Sel/Sab, rest Kam/Min).</p>' : ''}
+        </div>
+        ${isWorkout ? '' : `
+        <div class="set-row" style="border:0;padding:0">
+          <div class="set-info"><b>Quest CORE</b><p>Wajib selesai agar hari terhitung · XP 20 (non-core 10)</p></div>
+          <button type="button" class="switch" role="switch" aria-checked="${q ? !!q.core : false}" id="qe-core" aria-label="Quest core"></button>
+        </div>`}
+        <button type="submit" class="btn wide">Simpan</button>
+      </div>
+    </form>`);
+  const core = $('#qe-core');
+  if (core) core.addEventListener('click', () => {
+    core.setAttribute('aria-checked', core.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+  });
+  $('#qe-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const label = $('#qe-label').value.trim();
+    if (!label) return;
+    const editing = e.target.dataset.id;
+    if (editing){
+      const def = S.settings.questList.find(x => x.id === editing);
+      if (!def) return;
+      def.label = label;
+      if (!def.workout){
+        def.cat = $('#qe-cat').value;
+        def.core = $('#qe-core').getAttribute('aria-checked') === 'true';
+        def.xp = def.core ? XP_CORE : XP_NORMAL;
+      }
+    } else {
+      const isCore = $('#qe-core').getAttribute('aria-checked') === 'true';
+      S.settings.questList.push({id:uid(), label, cat:$('#qe-cat').value, core:isCore, xp:isCore ? XP_CORE : XP_NORMAL, doneToday:false});
+    }
+    save(); closeModal(); renderAll();
+  });
+}
+function confirmModal(title, text, actionLabel, action){
+  openModal(`
+    <div class="modal-head">
+      <div class="panel-title" style="color:var(--red)">${esc(title)}</div>
+      <button class="icon-btn" data-action="modal-close" aria-label="Tutup">${icon('x')}</button>
+    </div>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:16px">${esc(text)}</p>
+    <button class="btn danger wide" id="confirm-btn">${esc(actionLabel)}</button>`);
+  $('#confirm-btn').addEventListener('click', action);
+}
+function exportModal(){
+  const json = JSON.stringify(S, null, 2);
+  openModal(`
+    <div class="modal-head">
+      <div class="panel-title">Ekspor Data</div>
+      <button class="icon-btn" data-action="modal-close" aria-label="Tutup">${icon('x')}</button>
+    </div>
+    <textarea class="io" readonly id="export-ta">${esc(json)}</textarea>
+    <div style="display:grid;gap:8px;margin-top:12px">
+      <button class="btn wide" id="export-copy">Salin ke clipboard</button>
+      <button class="btn ghost wide" id="export-dl">Unduh arise_save.json</button>
+    </div>`);
+  $('#export-copy').addEventListener('click', async () => {
+    const ta = $('#export-ta');
+    try { await navigator.clipboard.writeText(ta.value); $('#export-copy').textContent = 'Tersalin ✓'; }
+    catch(e){ ta.select(); document.execCommand('copy'); $('#export-copy').textContent = 'Tersalin ✓'; }
+  });
+  $('#export-dl').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'arise_save.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+}
+function importModal(){
+  openModal(`
+    <div class="modal-head">
+      <div class="panel-title">Impor Data</div>
+      <button class="icon-btn" data-action="modal-close" aria-label="Tutup">${icon('x')}</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin-bottom:8px">Tempel isi file arise_save.json di sini. Data saat ini akan diganti.</p>
+    <textarea class="io" id="import-ta" placeholder='{"v":1,...}'></textarea>
+    <div class="form-err" id="import-err"></div>
+    <button class="btn wide" id="import-go">Impor & muat ulang</button>`);
+  $('#import-go').addEventListener('click', () => {
+    try {
+      const s = JSON.parse($('#import-ta').value);
+      if (!validateSave(s)) throw new Error('bad shape');
+      localStorage.setItem(KEY, JSON.stringify(normalizeSave(s)));
+      location.reload();
+    } catch(e){
+      $('#import-err').textContent = 'Data tidak valid — pastikan JSON hasil ekspor ARISE.';
+    }
+  });
+}
+
+/* ---------- aksi (event delegation) ---------- */
+const ACTIONS = {
+  'tab':        b => showTab(b.dataset.tab),
+  'qcheck':     b => completeQuest(b.dataset.id),
+  'qskip':      b => skipQuest(b.dataset.id),
+  'redeem':     () => completeRedemption(($('#redeem-note') || {value:''}).value.trim()),
+  'undo':       () => doUndo(),
+  'alloc-plus': b => allocStat(b.dataset.stat, +1),
+  'alloc-minus':b => allocStat(b.dataset.stat, -1),
+  'gate-metric':b => { gateMetric = b.dataset.k; renderGate(); },
+  'title-set':  b => {
+    const t = TITLES.find(x => x.id === b.dataset.id);
+    if (!t || !S.player.titlesUnlocked.includes(t.id)) return;
+    S.player.activeTitle = t.name;
+    save(); renderTitles(); renderStatus();
+    sysMsg(`Title equipped: "${t.name}".`, 'gold');
+  },
+  'toggle-sound': () => {
+    S.settings.soundOn = !S.settings.soundOn;
+    save(); renderSettings();
+    if (S.settings.soundOn) SFX.blip();
+  },
+  'save-name': () => {
+    const v = $('#set-name').value.trim();
+    if (!v) return;
+    S.player.name = v.slice(0, 20);
+    save(); renderStatus(); renderSettings();
+    sysMsg(`Registered name updated: ${S.player.name}.`, 'cyan');
+  },
+  'edit-quest': b => questEditorModal(b.dataset.id),
+  'add-quest':  () => questEditorModal(null),
+  'del-quest':  b => {
+    const q = S.settings.questList.find(x => x.id === b.dataset.id);
+    if (!q || q.workout) return;
+    confirmModal('Hapus Quest', `"${q.label}" akan dihapus dari daftar harian.`, 'Hapus', () => {
+      S.settings.questList = S.settings.questList.filter(x => x.id !== q.id);
+      save(); closeModal(); renderAll();
+    });
+  },
+  'export':     () => exportModal(),
+  'import':     () => importModal(),
+  'reset':      () => confirmModal('Reset System', 'Semua progres, level, streak, dan data Gate akan dihapus permanen dari perangkat ini.', 'Reset permanen', () => {
+    localStorage.removeItem(KEY);
+    location.reload();
+  }),
+  'modal-close': () => closeModal(),
+  'tutorial-done': () => { $('#tutorial').hidden = true; startApp(true); },
+  'recovery-download': () => {
+    const blob = new Blob([corruptRaw || ''], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'arise_corrupt_backup.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
+  'recovery-reset': () => { localStorage.removeItem(KEY); location.reload(); },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (!b) return;
+  const fn = ACTIONS[b.dataset.action];
+  if (fn) fn(b, e);
+});
+$('#sysline').addEventListener('click', () => { if (sysSkipFn) sysSkipFn(); });
+$('#sysline').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && sysSkipFn){ e.preventDefault(); sysSkipFn(); }
+});
+$('#levelup').addEventListener('click', closeLevelUp);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    if (!$('#modal').hidden) closeModal();
+    if (!$('#levelup').hidden) closeLevelUp();
+  }
+});
+document.addEventListener('submit', e => {
+  if (e.target.id === 'gate-form'){ e.preventDefault(); handleGateSubmit(); }
+});
+
+/* ---------- partikel ---------- */
+function initParticles(){
+  if (RM) return;
+  const cv = $('#fx-particles');
+  const ctx = cv.getContext('2d');
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  let W, H;
+  const N = 24, P = [];
+  function rs(){
+    W = cv.width = Math.floor(innerWidth * dpr);
+    H = cv.height = Math.floor(innerHeight * dpr);
+    cv.style.width = innerWidth + 'px';
+    cv.style.height = innerHeight + 'px';
+  }
+  rs();
+  addEventListener('resize', rs);
+  for (let i = 0; i < N; i++){
+    P.push({
+      x: Math.random(), y: Math.random(),
+      r: (0.6 + Math.random() * 1.3) * dpr,
+      s: (0.05 + Math.random() * 0.14) * dpr,
+      ph: Math.random() * 6.28,
+      a: 0.06 + Math.random() * 0.2,
+    });
+    P[i].px = P[i].x * innerWidth * dpr;
+    P[i].py = P[i].y * innerHeight * dpr;
+  }
+  let lt = performance.now();
+  function frame(t){
+    const dt = Math.min(50, t - lt);
+    lt = t;
+    if (!document.hidden){
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#39C5F3';
+      for (const p of P){
+        p.py -= p.s * dt / 16.7;
+        p.px += Math.sin(t / 4200 + p.ph) * 0.12 * dpr;
+        if (p.py < -8){ p.py = H + 8; p.px = Math.random() * W; }
+        ctx.globalAlpha = p.a;
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, p.r, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot & onboarding ---------- */
+let corruptRaw = null;
+async function boot(){
+  const t0 = performance.now();
+  const res = loadSave();
+  await sleep(Math.max(0, 600 - (performance.now() - t0)));
+  $('#boot').hidden = true;
+  if (res.corrupt){
+    corruptRaw = res.raw;
+    $('#recovery').hidden = false;
+    return;
+  }
+  if (!res.save){ showOnboarding(); return; }
+  S = res.save;
+  startApp(false);
+}
+async function showOnboarding(){
+  $('#onboard').hidden = false;
+  await typewrite($('#ob-text'), 'You have been selected as a Player. State your name.');
+  $('#ob-form').hidden = false;
+  $('#ob-name').focus();
+}
+$('#ob-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#ob-name').value.trim();
+  if (!name){ $('#ob-err').textContent = 'Nama tidak boleh kosong.'; return; }
+  S = defaultSave(name.slice(0, 20));
+  save();
+  $('#onboard').hidden = true;
+  $('#tutorial').hidden = false;
+});
+function startApp(isFirstRun){
+  initParticles();
+  const msgs = settleDays();
+  $('#app').hidden = false;
+  renderAll();
+  showTab('quests');
+  if (isFirstRun) sysMsg(`Player registered: ${S.player.name}. Rank E. Prove yourself.`, 'cyan');
+  msgs.forEach(m => sysMsg(m.text, m.tone));
+  if (noStorage) sysMsg('Storage unavailable in this browser. Progress will not persist.', 'red');
+  setInterval(checkDayFlip, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDayFlip(); });
+}
+function checkDayFlip(){
+  if (!S) return;
+  renderHeader();
+  if (jToday() !== S.meta.lastOpenDate){
+    commitUndo();
+    const msgs = settleDays();
+    renderAll();
+    msgs.forEach(m => sysMsg(m.text, m.tone));
+  }
+}
+window.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
