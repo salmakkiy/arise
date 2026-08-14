@@ -282,6 +282,24 @@ main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:640px;
 .qskip small{font-family:var(--f-mono);font-size:9px;color:var(--dim)}
 @media(hover:hover){.qskip:not(:disabled):hover{border-color:var(--cyan-dim);color:var(--cyan)}}
 .qskip:disabled{opacity:.35;cursor:default}
+/* quest latihan: baris bisa diketuk untuk membuka daftar gerakan hari itu */
+.quest.q-expand{display:block;padding:0}
+.q-expand .q-row{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.q-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:8px;text-align:left;min-height:44px}
+.qt-main{flex:1;min-width:0;display:block}
+.qt-main .qlabel{display:block}
+.q-toggle .chev{width:16px;height:16px;flex:none;color:var(--dim);transition:transform .25s ease}
+.q-expand.open .q-toggle .chev{transform:rotate(180deg)}
+.q-detail{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}
+.q-expand.open .q-detail{grid-template-rows:1fr}
+.q-detail > div{overflow:hidden;min-height:0}
+.q-moves{list-style:none;margin:0;padding:2px 12px 12px 68px}
+.q-moves li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0;border-top:1px solid rgba(57,197,243,.08);font-size:12px}
+.q-moves li:first-child{border-top-color:rgba(57,197,243,.18)}
+.q-moves li span{color:var(--ink);min-width:0}
+.q-moves li b{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--cyan);white-space:nowrap}
+.quest.done .q-moves li span{color:var(--dim)}
+@media(max-width:400px){.q-moves{padding-left:12px}}
 .rest-card{display:flex;gap:12px;align-items:center}
 .rest-card .ic{width:24px;height:24px;color:var(--gold);flex:none}
 .rest-card p{font-size:12px;color:var(--dim);margin-top:2px}
@@ -646,6 +664,7 @@ const IC = {
   down: '<path d="M12 3v12"/><path d="m6 11 6 6 6-6"/><path d="M4 21h16"/>',
   up:   '<path d="M12 21V9"/><path d="m6 13 6-6 6 6"/><path d="M4 3h16"/>',
   rest: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
 };
 const icon = (n, cls='') =>
   `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
@@ -665,6 +684,45 @@ function seedQuests(){
     {id:'screenoff', label:'Layar off 30–60 mnt sebelum tidur',           cat:'PER', core:false, xp:XP_NORMAL, doneToday:false},
   ];
 }
+/* Program latihan per hari (weekday Asia/Jakarta; 0=Min … 6=Sab).
+   Hanya dipakai untuk label & daftar gerakan instansi quest workout —
+   tidak pernah disimpan ke save, jadi skema data tidak berubah. */
+const WORKOUT_PLAN = {
+  1: {title:'Latihan: Full Body A + Abs', moves:[
+    ['Squat / goblet squat', '3×8–10'],
+    ['Push-up / bench', '3×8–12'],
+    ['Row', '3×8–12'],
+    ['Hanging leg raise', '3×8–12'],
+    ['Plank berbeban', '3×30–45 dtk'],
+  ]},
+  2: {title:'Latihan: Sprint Day', moves:[
+    ['Sprint max speed', '4–6 × 15 dtk'],
+    ['Istirahat antar sprint', '3 mnt'],
+    ['Penutup: hanging + stretching', ''],
+  ]},
+  3: {title:'Latihan: Full Body B + Arms', moves:[
+    ['RDL ringan–sedang', '3×8'],
+    ['Pull-up / lat pulldown', '3×6–10'],
+    ['Overhead press', '3×8–12'],
+    ['Curl', '3×10–12'],
+    ['Hammer curl', '2×12'],
+    ['Dips', '3×8–12'],
+    ['Lateral raise', '3×12–15'],
+  ]},
+  5: {title:'Latihan: Full Body C + Abs', moves:[
+    ['Lunge', '3×10 per kaki'],
+    ['Incline push-up / DB press', '3×8–12'],
+    ['Row variasi', '3×10'],
+    ['Weighted crunch', '3×10–12'],
+    ['Ab wheel', '3×8–10'],
+  ]},
+  6: {title:'Latihan: HIT Day', moves:[
+    ['Basket / badminton / sprint bebas', ''],
+    ['Opsional: curl', '2 set'],
+    ['Opsional: triceps', '2 set'],
+  ]},
+};
+
 const STAT_KEYS = ['STR','AGI','VIT','REC','PER'];
 const STAT_NAMES = {STR:'Strength', AGI:'Agility', VIT:'Vitality', REC:'Recovery', PER:'Perception'};
 
@@ -837,8 +895,10 @@ function questInstances(dateIso, ar){
       if (mode === 'REST') continue;
       if (mode === 'AR')
         list.push({id:q.id, label:'Active Recovery (stretching + jalan santai)', cat:'REC', core:true, xp:XP_CORE, workout:true, ar:true});
-      else
-        list.push({id:q.id, label:q.label, cat:mode, core:true, xp:XP_CORE, workout:true});
+      else {
+        const plan = WORKOUT_PLAN[weekdayOf(dateIso)];
+        list.push({id:q.id, label: plan ? plan.title : q.label, cat:mode, core:true, xp:XP_CORE, workout:true, moves: plan ? plan.moves : null});
+      }
     } else {
       list.push({id:q.id, label:q.label, cat:q.cat, core:!!q.core, xp:(typeof q.xp === 'number' ? q.xp : (q.core ? XP_CORE : XP_NORMAL))});
     }
@@ -1259,6 +1319,7 @@ function renderStatus(){
 }
 
 /* ---------- render: QUESTS ---------- */
+let workoutOpen = false; /* state UI panel gerakan; tidak dipersist */
 function renderQuests(){
   const prevNote = ($('#redeem-note') || {}).value || '';
   const today = jToday();
@@ -1321,12 +1382,38 @@ function renderQuests(){
       const done = def && def.doneToday;
       const skipped = done && S.meta.skippedId === q.id && S.meta.skipDate === today;
       const canSkip = !done && !q.core && skipAvailable;
-      return `
-      <div class="quest panel ${done ? 'done' : ''} enter">
+      const checkBtn = `
         <button class="qcheck ${fx.popId===q.id?'just':''}" data-action="qcheck" data-id="${q.id}"
           role="checkbox" aria-checked="${done ? 'true' : 'false'}" aria-label="${esc(q.label)}" ${done?'disabled':''}>
           ${icon('check')}
-        </button>
+        </button>`;
+      if (q.workout && q.moves){
+        return `
+      <div class="quest panel q-expand ${done ? 'done' : ''} ${workoutOpen ? 'open' : ''} enter">
+        <div class="q-row">
+          ${checkBtn}
+          <button class="qbody q-toggle" data-action="workout-toggle" aria-expanded="${workoutOpen}">
+            <span class="qt-main">
+              <span class="qlabel">${esc(q.label)}</span>
+              <span class="qmeta">
+                <span class="chip">${esc(q.cat)}</span>
+                <span class="chip core">CORE</span>
+                <span class="chip xp">+${q.xp} XP</span>
+              </span>
+            </span>
+            ${icon('chev', 'chev')}
+          </button>
+        </div>
+        <div class="q-detail"><div>
+          <ul class="q-moves">
+            ${q.moves.map(mv => `<li><span>${esc(mv[0])}</span>${mv[1] ? `<b>${esc(mv[1])}</b>` : ''}</li>`).join('')}
+          </ul>
+        </div></div>
+      </div>`;
+      }
+      return `
+      <div class="quest panel ${done ? 'done' : ''} enter">
+        ${checkBtn}
         <div class="qbody">
           <div class="qlabel">${esc(q.label)}</div>
           <div class="qmeta">
@@ -1728,6 +1815,12 @@ const ACTIONS = {
   'alloc-plus': b => allocStat(b.dataset.stat, +1),
   'alloc-minus':b => allocStat(b.dataset.stat, -1),
   'gate-metric':b => { gateMetric = b.dataset.k; renderGate(); },
+  'workout-toggle': b => {
+    workoutOpen = !workoutOpen;
+    const card = b.closest('.q-expand');
+    if (card){ card.classList.toggle('open', workoutOpen); }
+    b.setAttribute('aria-expanded', String(workoutOpen));
+  },
   'title-set':  b => {
     const t = TITLES.find(x => x.id === b.dataset.id);
     if (!t || !S.player.titlesUnlocked.includes(t.id)) return;
