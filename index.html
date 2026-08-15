@@ -294,11 +294,28 @@ main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:640px;
 .q-expand.open .q-detail{grid-template-rows:1fr}
 .q-detail > div{overflow:hidden;min-height:0}
 .q-moves{list-style:none;margin:0;padding:2px 12px 12px 68px}
-.q-moves li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0;border-top:1px solid rgba(57,197,243,.08);font-size:12px}
+.q-moves li{display:block;border-top:1px solid rgba(57,197,243,.08);font-size:12px}
 .q-moves li:first-child{border-top-color:rgba(57,197,243,.18)}
-.q-moves li span{color:var(--ink);min-width:0}
-.q-moves li b{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--cyan);white-space:nowrap}
-.quest.done .q-moves li span{color:var(--dim)}
+.mv-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;min-height:36px}
+.mv-row > span:first-child{color:var(--ink);min-width:0}
+.mv-side{display:flex;align-items:center;gap:10px;flex:none}
+.q-moves b{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--cyan);white-space:nowrap}
+.quest.done .mv-row > span:first-child{color:var(--dim)}
+.mv-play{
+  width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(57,197,243,.25);color:var(--dim);position:relative;
+  transition:color .15s ease,border-color .15s ease,background .15s ease;
+}
+.mv-play::before{content:"";position:absolute;inset:-5px}
+.mv-play .ic{width:14px;height:14px}
+.mv-play[aria-expanded="true"]{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-faint);box-shadow:0 0 8px rgba(57,197,243,.3)}
+@media(hover:hover){.mv-play:hover{color:var(--cyan);border-color:var(--cyan-dim)}}
+.mv-play:active{transform:scale(.94)}
+.q-video{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}
+.q-video.on{grid-template-rows:1fr}
+.q-video > div{overflow:hidden;min-height:0}
+.vid-box{position:relative;aspect-ratio:16/9;background:#000;border:1px solid rgba(57,197,243,.25);margin:2px 0 10px}
+.vid-box iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 @media(max-width:400px){.q-moves{padding-left:12px}}
 .rest-card{display:flex;gap:12px;align-items:center}
 .rest-card .ic{width:24px;height:24px;color:var(--gold);flex:none}
@@ -665,6 +682,7 @@ const IC = {
   up:   '<path d="M12 21V9"/><path d="m6 13 6-6 6 6"/><path d="M4 3h16"/>',
   rest: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
+  play: '<path d="M8.5 5.5v13l10-6.5z"/>',
 };
 const icon = (n, cls='') =>
   `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
@@ -687,39 +705,43 @@ function seedQuests(){
 /* Program latihan per hari (weekday Asia/Jakarta; 0=Min … 6=Sab).
    Hanya dipakai untuk label & daftar gerakan instansi quest workout —
    tidak pernah disimpan ke save, jadi skema data tidak berubah. */
+/* Elemen ke-3 tiap gerakan = ID video YouTube tutorial (semua diverifikasi
+   via endpoint oEmbed — video ada & boleh di-embed). Elemen ke-4 opsional:
+   detik mulai untuk video gabungan. */
 const WORKOUT_PLAN = {
   1: {title:'Latihan: Full Body A + Abs', moves:[
-    ['Squat / goblet squat', '3×8–10'],
-    ['Push-up / bench', '3×8–12'],
-    ['Row', '3×8–12'],
-    ['Hanging leg raise', '3×8–12'],
-    ['Plank berbeban', '3×30–45 dtk'],
+    ['Squat / goblet squat', '3×8–10', 'zsN2WvklwDk'],
+    ['Push-up / bench', '3×8–12', 'IODxDxX7oi4'],
+    ['Row', '3×8–12', 'tLnlWj7LQ34'],
+    ['Hanging leg raise', '3×8–12', 'S2QVHl6DoNo'],
+    ['Plank berbeban', '3×30–45 dtk', 'mwlp75MS6Rg'],
   ]},
   2: {title:'Latihan: Sprint Day', moves:[
-    ['Sprint max speed', '4–6 × 15 dtk'],
+    ['Sprint max speed', '4–6 × 15 dtk', '6m_fjNhRhkY'],
     ['Istirahat antar sprint', '3 mnt'],
-    ['Penutup: hanging + stretching', ''],
+    ['Penutup: hanging di bar', '', '2vspW4N4BMs'],
+    ['Stretching penutup', '±5 mnt', 'mm_mq0Uh5RI'],
   ]},
   3: {title:'Latihan: Full Body B + Arms', moves:[
-    ['RDL ringan–sedang', '3×8'],
-    ['Pull-up / lat pulldown', '3×6–10'],
-    ['Overhead press', '3×8–12'],
-    ['Curl', '3×10–12'],
-    ['Hammer curl', '2×12'],
-    ['Dips', '3×8–12'],
-    ['Lateral raise', '3×12–15'],
+    ['RDL ringan–sedang', '3×8', 'JNUfJqmuti0'],
+    ['Pull-up / lat pulldown', '3×6–10', 'CGAqIFxl43Q'],
+    ['Overhead press', '3×8–12', 'qEwKCR5JCog'],
+    ['Curl', '3×10–12', 'ykJmrZ5v0Oo'],
+    ['Hammer curl', '2×12', '8XLxfXROrTo'],
+    ['Dips', '3×8–12', 'c3ZGl4pAwZ4'],
+    ['Lateral raise', '3×12–15', 'nnH63icHYXY'],
   ]},
   5: {title:'Latihan: Full Body C + Abs', moves:[
-    ['Lunge', '3×10 per kaki'],
-    ['Incline push-up / DB press', '3×8–12'],
-    ['Row variasi', '3×10'],
-    ['Weighted crunch', '3×10–12'],
-    ['Ab wheel', '3×8–10'],
+    ['Lunge', '3×10 per kaki', 'QOVaHwm-Q6U'],
+    ['Incline push-up / DB press', '3×8–12', '0JUrOH--Kdk'],
+    ['Row variasi', '3×10', 'pYcpY20QaE8'],
+    ['Weighted crunch', '3×10–12', '43JfVzbmovE'],
+    ['Ab wheel', '3×8–10', 'PK4n7qJpOhM'],
   ]},
   6: {title:'Latihan: HIT Day', moves:[
-    ['Basket / badminton / sprint bebas', ''],
-    ['Opsional: curl', '2 set'],
-    ['Opsional: triceps', '2 set'],
+    ['Basket / badminton / sprint bebas', '', '6m_fjNhRhkY'],
+    ['Opsional: curl', '2 set', 'ykJmrZ5v0Oo'],
+    ['Opsional: triceps', '2 set', '-Vyt2QdsR7E'],
   ]},
 };
 
@@ -1406,7 +1428,15 @@ function renderQuests(){
         </div>
         <div class="q-detail"><div>
           <ul class="q-moves">
-            ${q.moves.map(mv => `<li><span>${esc(mv[0])}</span>${mv[1] ? `<b>${esc(mv[1])}</b>` : ''}</li>`).join('')}
+            ${q.moves.map(mv => `
+            <li>
+              <div class="mv-row">
+                <span>${esc(mv[0])}</span>
+                <span class="mv-side">${mv[1] ? `<b>${esc(mv[1])}</b>` : ''}${mv[2] ? `
+                  <button class="mv-play" data-action="move-video" aria-expanded="false" aria-label="Video cara melakukan ${esc(mv[0])}">${icon('play')}</button>` : ''}</span>
+              </div>
+              ${mv[2] ? `<div class="q-video"><div><div class="vid-box" data-vid="${esc(mv[2])}" data-start="${Number(mv[3]) || 0}"></div></div></div>` : ''}
+            </li>`).join('')}
           </ul>
         </div></div>
       </div>`;
@@ -1820,6 +1850,29 @@ const ACTIONS = {
     const card = b.closest('.q-expand');
     if (card){ card.classList.toggle('open', workoutOpen); }
     b.setAttribute('aria-expanded', String(workoutOpen));
+  },
+  /* embed video dimuat on-demand & dibongkar saat ditutup — hemat data/memori */
+  'move-video': b => {
+    const li = b.closest('li');
+    const wrap = li && li.querySelector('.q-video');
+    const box = wrap && wrap.querySelector('.vid-box');
+    if (!wrap || !box) return;
+    const opening = !wrap.classList.contains('on');
+    $$('.q-video.on').forEach(w => {
+      w.classList.remove('on');
+      const bx = w.querySelector('.vid-box'); if (bx) bx.innerHTML = '';
+      const pli = w.closest('li');
+      const pb = pli && pli.querySelector('.mv-play');
+      if (pb) pb.setAttribute('aria-expanded', 'false');
+    });
+    if (opening){
+      const id = box.dataset.vid;
+      if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return;
+      const start = parseInt(box.dataset.start || '0', 10);
+      box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0${start ? '&start=' + start : ''}" title="Video tutorial gerakan" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>`;
+      wrap.classList.add('on');
+      b.setAttribute('aria-expanded', 'true');
+    }
   },
   'title-set':  b => {
     const t = TITLES.find(x => x.id === b.dataset.id);
